@@ -1,0 +1,48 @@
+/*
+ * Approximate design tokens (pragmatic pass — exact values TBD against the real
+ * design-system files, see specs/open-questions.md #4). Created here (T005) since the
+ * shared/ui primitives need them immediately; T016 only needs to make sure this file is
+ * imported once at app boot.
+ */
+:root {
+  --color-primary: #1f5138;
+  --color-primary-hover: #163b29;
+  --color-primary-contrast: #ffffff;
+  --color-bg: #faf9f7;
+  --color-surface: #ffffff;
+  --color-border: #e4e1db;
+  --color-text: #1a1a17;
+  --color-text-muted: #6b6b63;
+  --color-danger: #b3261e;
+  --color-danger-bg: #fbeceb;
+  --color-success: #1f5138;
+
+  --surface-advice: #efeaf9;
+  --surface-advice-border: #8a6fd6;
+  --surface-advice-text: #4a3a8a;
+
+  --content-max: 1160px;
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --radius-pill: 999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family);
+}
