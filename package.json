@@ -15,6 +15,7 @@
     "generate:api": "openapi-typescript specs/vacancy.yml -o src/shared/api/generated/vacancy-api.ts"
   },
   "dependencies": {
+    "lucide-react": "^1.47.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.1"
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@eslint/js": "^9.17.0",
     "@feature-sliced/steiger-plugin": "^0.5.2",
+    "@playwright/test": "^1.49.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.5.2",
@@ -37,7 +39,6 @@
     "jsdom": "^25.0.1",
     "openapi-typescript": "^7.5.2",
     "playwright": "^1.49.1",
-    "@playwright/test": "^1.49.1",
     "steiger": "^0.5.7",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.18.2",

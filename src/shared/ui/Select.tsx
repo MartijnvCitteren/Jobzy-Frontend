@@ -14,34 +14,43 @@ export interface SelectProps {
   error?: string;
   placeholder?: string;
   disabled?: boolean;
+  /** Short mono badge (e.g. an ISO2 country code) shown between the control text and the chevron. */
+  suffix?: string;
 }
 
-export function Select({ label, options, value, onChange, error, placeholder, disabled }: SelectProps) {
+export function Select({ label, options, value, onChange, error, placeholder, disabled, suffix }: SelectProps) {
   const id = useId();
   return (
     <div className={styles.field}>
       <label htmlFor={id} className={styles.label}>
         {label}
       </label>
-      <select
-        id={id}
-        className={styles.control}
-        value={value}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
-        aria-invalid={Boolean(error)}
-      >
-        {placeholder !== undefined && (
-          <option value="" disabled>
-            {placeholder}
-          </option>
+      <div className={styles.controlWrapper}>
+        <select
+          id={id}
+          className={`${styles.control}${suffix ? ` ${styles.controlWithSuffix}` : ''}`}
+          value={value}
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.value)}
+          aria-invalid={Boolean(error)}
+        >
+          {placeholder !== undefined && (
+            <option value="" disabled>
+              {placeholder}
+            </option>
+          )}
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        {suffix && (
+          <span className={styles.suffix} aria-hidden="true">
+            {suffix}
+          </span>
         )}
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      </div>
       {error && <p className={styles.error}>{error}</p>}
     </div>
   );

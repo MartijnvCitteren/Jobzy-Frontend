@@ -32,4 +32,16 @@ describe('Select', () => {
 
     expect(screen.getByText('is verplicht')).toBeInTheDocument();
   });
+
+  it('shows a suffix badge next to the control when provided', () => {
+    render(<Select label="Land" options={options} value="NL" onChange={vi.fn()} suffix="NL" />);
+
+    expect(screen.getByText('NL', { selector: 'span' })).toBeInTheDocument();
+  });
+
+  it('renders no suffix badge when the suffix prop is omitted', () => {
+    render(<Select label="Land" options={options} value="NL" onChange={vi.fn()} />);
+
+    expect(screen.queryByText('NL', { selector: 'span' })).not.toBeInTheDocument();
+  });
 });

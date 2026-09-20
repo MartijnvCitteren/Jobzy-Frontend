@@ -1,39 +1,110 @@
 /*
- * Approximate design tokens (pragmatic pass — exact values TBD against the real
- * design-system files, see specs/open-questions.md #4). Created here (T005) since the
- * shared/ui primitives need them immediately; T016 only needs to make sure this file is
- * imported once at app boot.
+ * Real design tokens, adopted verbatim from the design handoff's "_ds" kit
+ * (its per-topic token files under tokens dot css) per ADR-0003. Names and values are
+ * copied as-is; no remapping to the earlier placeholder token names.
  */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 :root {
-  --color-primary: #1f5138;
-  --color-primary-hover: #163b29;
-  --color-primary-contrast: #ffffff;
-  --color-bg: #faf9f7;
-  --color-surface: #ffffff;
-  --color-border: #e4e1db;
-  --color-text: #1a1a17;
-  --color-text-muted: #6b6b63;
-  --color-danger: #b3261e;
-  --color-danger-bg: #fbeceb;
-  --color-success: #1f5138;
+  /* Base palette */
+  --teal: oklch(0.46 0.09 175);
+  --violet: oklch(0.5 0.15 300);
+  --sand: oklch(0.72 0.11 70);
+  --danger: oklch(0.5 0.16 25);
+  --surface-bg: oklch(0.985 0.004 90);
+  --surface: oklch(0.97 0.005 90);
+  --border: oklch(0.88 0.006 90);
+  --ink: oklch(0.22 0.01 90);
+  --ink-secondary: oklch(0.45 0.01 90);
+  --on-teal: oklch(0.985 0.004 90);
+  --on-danger: oklch(0.985 0.004 90);
 
-  --surface-advice: #efeaf9;
-  --surface-advice-border: #8a6fd6;
-  --surface-advice-text: #4a3a8a;
+  --status-passed: var(--teal);
+  --status-attention: var(--sand);
+  --status-rejected: var(--danger);
+  --status-insight: var(--violet);
+  --status-passed-bg: #e3f2ec;
+  --status-attention-bg: #fbead2;
+  --status-rejected-bg: #fbe4e2;
+  --status-insight-bg: #efe8fb;
 
-  --content-max: 1160px;
-  --radius-card: 12px;
-  --radius-control: 8px;
+  --ink-panel: #12181a;
+  --on-ink-panel: #ffffff;
+  --on-ink-panel-secondary: #9aa3a1;
+
+  /* Spacing */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 48px;
+  --space-6: 64px;
+  --content-max: 840px;
+  --bp-mobile: 640px;
+  --bp-tablet: 1024px;
+
+  /* Radius */
+  --radius-control: 10px;
+  --radius-card: 20px;
   --radius-pill: 999px;
 
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
+  /* Typography */
+  --text-display-size: 60px;
+  --text-display-line: 64px;
+  --text-display-weight: 800;
+  --text-h1-size: 32px;
+  --text-h1-line: 40px;
+  --text-h1-weight: 700;
+  --text-body-size: 17px;
+  --text-body-line: 26px;
+  --text-body-weight: 400;
+  --text-figure-size: 28px;
+  --text-figure-line: 34px;
+  --text-figure-weight: 600;
+  --text-control-size: 15px;
+  --text-control-weight: 600;
+  --text-label-size: 12px;
+  --text-caption-size: 13px;
+  --text-ui-size: 14px;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  --font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Motion */
+  --ease: ease-out;
+  --duration: 280ms;
+  --duration-hover: 200ms;
+  --transition: all var(--duration) var(--ease);
+  --transition-hover: background var(--duration-hover) var(--ease),
+    border-color var(--duration-hover) var(--ease), color var(--duration-hover) var(--ease);
+
+  /* Semantic aliases */
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-secondary);
+  --text-link: var(--teal);
+  --text-error: var(--danger);
+  --text-on-accent: var(--on-teal);
+
+  --surface-page: var(--surface-bg);
+  --surface-card: var(--surface);
+  --surface-advice: var(--status-insight-bg);
+
+  --border-hairline: var(--border);
+  --border-focus: var(--teal);
+  --border-error: var(--danger);
+
+  --action-primary: var(--teal);
+  --action-primary-hover: color-mix(in oklch, var(--teal) 85%, black);
+  --action-primary-text: var(--on-teal);
+  --action-destructive: var(--danger);
+  --action-destructive-text: var(--on-danger);
+  --action-disabled-bg: var(--border);
+  --action-disabled-text: var(--ink-secondary);
+
+  --accent-advice: var(--violet);
+  --accent-warm: var(--sand);
+
+  --nav-active-bg: var(--status-passed-bg);
+  --nav-active-fg: var(--teal);
 }
 
 * {
@@ -42,7 +113,43 @@
 
 body {
   margin: 0;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-family);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-line);
+}
+
+/*
+ * Base heading scale — the design system never leaves h1/h2/h3 at browser defaults, so
+ * every heading in the app gets sized from the real type tokens here rather than each
+ * component having to repeat font-size/weight rules just to opt out of the UA stylesheet.
+ */
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 700;
+}
+
+h1 {
+  font-size: var(--text-h1-size);
+  line-height: var(--text-h1-line);
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: 19px;
+  line-height: 1.4;
+}
+
+h3 {
+  font-size: var(--text-control-size);
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
 }

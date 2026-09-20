@@ -4,6 +4,7 @@
   font: inherit;
   cursor: pointer;
   border: 1px solid transparent;
+  transition: var(--transition-hover);
 }
 
 .button:disabled {
@@ -12,24 +13,24 @@
 }
 
 .primary {
-  background: var(--color-primary);
-  color: var(--color-primary-contrast);
+  background: var(--action-primary);
+  color: var(--action-primary-text);
 }
 
 .primary:not(:disabled):hover {
-  background: var(--color-primary-hover);
+  background: var(--action-primary-hover);
 }
 
 .secondary {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  color: var(--color-text);
+  background: var(--surface-card);
+  border-color: var(--border-hairline);
+  color: var(--text-primary);
 }
 
 .text {
   background: transparent;
   border-color: transparent;
-  color: var(--color-text-muted);
+  color: var(--text-secondary);
   padding-left: 0;
   padding-right: 0;
 }

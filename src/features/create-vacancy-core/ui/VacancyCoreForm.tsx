@@ -11,6 +11,7 @@ import { countries } from '../../../entities/location';
 import { toFieldErrors } from '../../../shared/lib/problem-details';
 import type { ApiError } from '../../../shared/api';
 import { Button, Card, ErrorBanner, NumberField, Select, SegmentedControl, TextField } from '../../../shared/ui';
+import styles from './VacancyCoreForm.module.css';
 
 export interface VacancyCoreFormValues {
   jobTitle: string;
@@ -68,7 +69,6 @@ export function VacancyCoreForm({ vacancyId, initialValues, onSaved, onNext }: V
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [topLevelError, setTopLevelError] = useState<string | undefined>(undefined);
   const [saving, setSaving] = useState(false);
-  const [savedAt, setSavedAt] = useState<Date | undefined>(undefined);
 
   const hoursReadOnly = vacancyId !== null;
 
@@ -105,7 +105,6 @@ export function VacancyCoreForm({ vacancyId, initialValues, onSaved, onNext }: V
           workplaceType: values.workplaceType,
         });
       }
-      setSavedAt(new Date());
       onSaved(vacancy);
       if (advance) {
         onNext?.(vacancy);
@@ -142,55 +141,65 @@ export function VacancyCoreForm({ vacancyId, initialValues, onSaved, onNext }: V
         placeholder="Kies een categorie"
         error={fieldErrors.category}
       />
-      <Select
-        label="Land"
-        value={values.country}
-        onChange={(value) => setField('country', value)}
-        options={countries.map((c) => ({ value: c.code, label: c.labelNl }))}
-        placeholder="Kies een land"
-        error={fieldErrors.country}
-      />
-      <TextField
-        label="Stad"
-        value={values.city}
-        onChange={(value) => setField('city', value)}
-        error={fieldErrors.city}
-        maxLength={200}
-      />
+      <div className={styles.grid}>
+        <Select
+          label="Land"
+          value={values.country}
+          onChange={(value) => setField('country', value)}
+          options={countries.map((c) => ({ value: c.code, label: c.labelNl }))}
+          placeholder="Kies een land"
+          error={fieldErrors.country}
+          suffix={values.country || undefined}
+        />
+        <TextField
+          label="Stad"
+          value={values.city}
+          onChange={(value) => setField('city', value)}
+          error={fieldErrors.city}
+          maxLength={200}
+        />
+      </div>
       <SegmentedControl
         label="Type werkplek"
         value={values.workplaceType}
         onChange={(value) => setField('workplaceType', value)}
         options={workplaceTypeOptions}
       />
-      <NumberField
-        label="Uren per week (minimum)"
-        value={values.minHoursPerWeek}
-        onChange={(value) => setField('minHoursPerWeek', value)}
-        error={fieldErrors.minHoursPerWeek}
-        min={0}
-        max={60}
-        disabled={hoursReadOnly}
-      />
-      <NumberField
-        label="Uren per week (maximum)"
-        value={values.maxHoursPerWeek}
-        onChange={(value) => setField('maxHoursPerWeek', value)}
-        error={fieldErrors.maxHoursPerWeek}
-        min={1}
-        max={60}
-        disabled={hoursReadOnly}
-      />
+      <div className={styles.grid}>
+        <NumberField
+          label="Uren per week (minimum)"
+          value={values.minHoursPerWeek}
+          onChange={(value) => setField('minHoursPerWeek', value)}
+          error={fieldErrors.minHoursPerWeek}
+          min={0}
+          max={60}
+          disabled={hoursReadOnly}
+        />
+        <NumberField
+          label="Uren per week (maximum)"
+          value={values.maxHoursPerWeek}
+          onChange={(value) => setField('maxHoursPerWeek', value)}
+          error={fieldErrors.maxHoursPerWeek}
+          min={1}
+          max={60}
+          disabled={hoursReadOnly}
+        />
+      </div>
       {hoursReadOnly && <p>Uren per week kunnen na aanmaken niet meer worden aangepast.</p>}
 
-      <div>
-        <Button variant="text" type="button" disabled={saving} onClick={() => save(false)}>
+      <div className={styles.footer}>
+        <Button
+          variant="text"
+          type="button"
+          className={styles.saveDraftButton}
+          disabled={saving}
+          onClick={() => save(false)}
+        >
           Bewaren als concept
         </Button>
         <Button variant="primary" type="button" disabled={saving} onClick={() => save(true)}>
           Volgende
         </Button>
-        {savedAt && <span>Concept opgeslagen {savedAt.toLocaleTimeString('nl-NL')}</span>}
       </div>
     </Card>
   );

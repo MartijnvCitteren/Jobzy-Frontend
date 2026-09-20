@@ -1,0 +1,62 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  text-align: left;
+  border-radius: var(--radius-card);
+  padding: 22px;
+  cursor: pointer;
+  border: 1.5px solid var(--border-hairline);
+  background: var(--surface-card);
+  font: inherit;
+  transition: var(--transition-hover);
+}
+
+.card[aria-pressed='true'] {
+  border-color: var(--teal);
+  background: var(--status-passed-bg);
+}
+
+.card[data-variant='advice'] {
+  border-color: var(--violet);
+  background: var(--surface-advice);
+}
+
+.card[data-variant='advice'][aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--violet);
+}
+
+.iconChip {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-control);
+  background: var(--surface-card);
+  color: var(--violet);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  color: var(--teal);
+}
+
+.title {
+  font-size: var(--text-control-size);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card[data-variant='advice'] .title {
+  font-weight: 700;
+  color: var(--accent-advice);
+}
+
+.body {
+  font-size: var(--text-caption-size);
+  color: var(--text-secondary);
+}
+
+.card[data-variant='advice'] .body {
+  color: var(--text-primary);
+}

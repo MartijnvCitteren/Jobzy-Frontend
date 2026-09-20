@@ -17,5 +17,6 @@ export {
   salaryPeriodLabels,
   salaryPeriodOptions,
 } from './lib/labels';
+export { formatSalary } from './lib/salary';
 export { vacancyApi } from './api/vacancyApi';
 export type { VacancyCorePatch, VacancyContactOfferPatch } from './api/vacancyApi';

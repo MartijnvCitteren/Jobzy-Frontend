@@ -74,4 +74,14 @@ describe('vacancyApi', () => {
     expect(httpClient.patch).toHaveBeenCalledWith('/vacancy/vacancy-1', body);
     expect(result).toEqual(vacancy);
   });
+
+  it('publishVacancy POSTs to /vacancy/{id}/publish', async () => {
+    const published = { ...vacancy, status: 'PUBLISHED' } as unknown as VacancyResponse;
+    vi.mocked(httpClient.post).mockResolvedValue(published);
+
+    const result = await vacancyApi.publishVacancy('vacancy-1');
+
+    expect(httpClient.post).toHaveBeenCalledWith('/vacancy/vacancy-1/publish', undefined);
+    expect(result).toEqual(published);
+  });
 });

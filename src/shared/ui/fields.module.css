@@ -5,25 +5,50 @@
 }
 
 .label {
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
+  font-size: var(--text-ui-size);
+  color: var(--text-secondary);
+}
+
+.labelBold {
+  font-weight: 600;
 }
 
 .control {
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-control);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-card);
+  color: var(--text-primary);
   font: inherit;
+  transition: var(--transition-hover);
 }
 
 .control[aria-invalid='true'] {
-  border-color: var(--color-danger);
+  border-color: var(--border-error);
+}
+
+.controlWrapper {
+  position: relative;
+}
+
+.controlWithSuffix {
+  padding-right: calc(var(--space-3) * 2 + 2ch);
+  width: 100%;
+}
+
+.suffix {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: var(--text-label-size);
+  color: var(--text-secondary);
+  pointer-events: none;
 }
 
 .error {
   margin: 0;
-  color: var(--color-danger);
-  font-size: 0.8125rem;
+  color: var(--text-error);
+  font-size: var(--text-caption-size);
 }

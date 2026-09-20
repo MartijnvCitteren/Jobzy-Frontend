@@ -17,6 +17,7 @@ vi.mock('../../../entities/vacancy', async () => {
       createVacancy: vi.fn(),
       patchVacancyCore: vi.fn(),
       patchVacancyContactOffer: vi.fn(),
+      publishVacancy: vi.fn(),
     },
   };
 });
@@ -74,7 +75,10 @@ describe('VacancyCreatePage', () => {
     vi.mocked(vacancyApi.createVacancy).mockReset();
     vi.mocked(vacancyApi.patchVacancyCore).mockReset();
     vi.mocked(vacancyApi.patchVacancyContactOffer).mockReset();
+    vi.mocked(vacancyApi.publishVacancy).mockReset();
     vi.mocked(descriptionApi.saveDescription).mockReset();
+    vi.mocked(descriptionApi.generateDescription).mockReset();
+    vi.mocked(descriptionApi.getGenerationStatus).mockReset();
   });
 
   it('starts on step 1 and does not advance while the step is invalid', async () => {
@@ -102,7 +106,7 @@ describe('VacancyCreatePage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Netwerkfout: de server is niet bereikbaar.');
   });
 
-  it('advances step-by-step to Step 4 on a full happy-path click-through (manual description path)', async () => {
+  it('full click-through in manual mode: step 1 -> mode choice -> step 3 -> step 4 -> preview -> publish -> published', async () => {
     const user = userEvent.setup();
     vi.mocked(vacancyApi.createVacancy).mockResolvedValue(createdVacancy);
     vi.mocked(descriptionApi.saveDescription).mockResolvedValue({ summary: 'Written by hand' });
@@ -110,23 +114,84 @@ describe('VacancyCreatePage', () => {
       ...createdVacancy,
       contactPerson: { name: 'Jane Doe', email: 'jane@example.com' },
     } as unknown as VacancyResponse);
+    vi.mocked(vacancyApi.publishVacancy).mockResolvedValue({
+      ...createdVacancy,
+      status: 'PUBLISHED',
+    } as unknown as VacancyResponse);
 
     renderPage();
 
     await completeStep1(user);
+    expect(await screen.findByText(/Concept opgeslagen/)).toBeInTheDocument();
 
     expect(await screen.findByRole('heading', { name: 'Vacaturetekst' })).toBeInTheDocument();
-    await user.type(screen.getByLabelText('Samenvatting'), 'Written by hand');
+    await user.click(screen.getByRole('button', { name: /Zelf schrijven/ }));
     await user.click(screen.getByRole('button', { name: 'Volgende' }));
+
+    expect(await screen.findByLabelText('Samenvatting')).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Samenvatting'), 'Written by hand');
+    await user.click(screen.getByRole('button', { name: 'Concept opslaan' }));
     await waitFor(() => expect(descriptionApi.saveDescription).toHaveBeenCalledTimes(1));
 
-    expect(await screen.findByRole('heading', { name: 'Contact en voorwaarden' })).toBeInTheDocument();
     await user.type(screen.getByLabelText('Naam'), 'Jane Doe');
     await user.type(screen.getByLabelText('E-mailadres'), 'jane@example.com');
     await user.click(screen.getByRole('button', { name: 'Volgende' }));
     await waitFor(() => expect(vacancyApi.patchVacancyContactOffer).toHaveBeenCalledTimes(1));
 
     expect(await screen.findByRole('heading', { name: 'Overzicht' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Voltooien' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Bekijk je vacature' }));
+
+    expect(await screen.findByText('Zo ziet een sollicitant je vacature')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Publiceer vacature' }));
+
+    expect(await screen.findByRole('dialog', { name: 'Vacature publiceren?' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ja, publiceer' }));
+
+    await waitFor(() => expect(vacancyApi.publishVacancy).toHaveBeenCalledWith('vacancy-1'));
+    expect(await screen.findByText(/Vacature gepubliceerd/)).toBeInTheDocument();
+  });
+
+  it('full click-through in AI mode: mode choice opens the 3-questions modal and gates step 3/4 on the shared generation phase', async () => {
+    const user = userEvent.setup();
+    vi.mocked(vacancyApi.createVacancy).mockResolvedValue(createdVacancy);
+    vi.mocked(descriptionApi.generateDescription).mockResolvedValue({
+      generationId: 'gen-1',
+      status: 'PENDING',
+    });
+    vi.mocked(descriptionApi.getGenerationStatus).mockResolvedValue({
+      generationId: 'gen-1',
+      status: 'COMPLETED',
+      description: { summary: 'AI summary', jobDescription: 'AI role text', tasks: 'AI tasks' },
+    });
+    vi.mocked(vacancyApi.patchVacancyContactOffer).mockResolvedValue({
+      ...createdVacancy,
+      contactPerson: { name: 'Jane Doe', email: 'jane@example.com' },
+    } as unknown as VacancyResponse);
+
+    renderPage();
+    await completeStep1(user);
+
+    expect(await screen.findByRole('heading', { name: 'Vacaturetekst' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Jobzy stelt een concept op/ }));
+    await user.click(screen.getByRole('button', { name: 'Beantwoord 3 vragen' }));
+
+    expect(await screen.findByRole('dialog', { name: 'Drie korte vragen' })).toBeInTheDocument();
+    await user.type(
+      screen.getByLabelText('Wat doet deze collega op een gemiddelde dag?'),
+      'API bouwen',
+    );
+    await user.type(screen.getByLabelText('Waarom zou iemand voor jullie kiezen?'), 'Autonomie');
+    await user.click(screen.getByRole('button', { name: 'Genereer mijn concept vacature' }));
+
+    await waitFor(() => expect(descriptionApi.generateDescription).toHaveBeenCalledTimes(1));
+
+    expect(await screen.findByLabelText('Naam')).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Naam'), 'Jane Doe');
+    await user.type(screen.getByLabelText('E-mailadres'), 'jane@example.com');
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+    await waitFor(() => expect(vacancyApi.patchVacancyContactOffer).toHaveBeenCalledTimes(1));
+
+    expect(await screen.findByRole('heading', { name: 'Overzicht' })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText('Samenvatting')).toHaveValue('AI summary'));
   });
 });

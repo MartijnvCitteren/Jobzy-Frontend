@@ -30,6 +30,12 @@ describe('VacancyDescriptionEditor', () => {
     expect(screen.getByLabelText('Samenvatting')).toHaveValue('');
   });
 
+  it('does not render a "Wat wij bieden" field', () => {
+    render(<VacancyDescriptionEditor vacancyId="vacancy-1" onSaved={vi.fn()} />);
+
+    expect(screen.queryByLabelText('Wat wij bieden')).not.toBeInTheDocument();
+  });
+
   it('pre-fills fields from a passed-in draft', () => {
     const draft: VacancyDescriptionResponse = {
       summary: 'Generated summary',
@@ -41,24 +47,26 @@ describe('VacancyDescriptionEditor', () => {
     render(<VacancyDescriptionEditor vacancyId="vacancy-1" draft={draft} onSaved={vi.fn()} />);
 
     expect(screen.getByLabelText('Samenvatting')).toHaveValue('Generated summary');
-    expect(screen.getByLabelText('Functieomschrijving')).toHaveValue('Generated job description');
+    expect(screen.getByLabelText('Over de rol')).toHaveValue('Generated job description');
+    expect(screen.getByLabelText('Taken')).toHaveValue('Generated tasks');
+    expect(screen.getByLabelText('Team en organisatie')).toHaveValue('Generated about us');
   });
 
-  it('enforces maxLength on the summary field', () => {
+  it('enforces maxLength on the summary and over-de-rol fields', () => {
     render(<VacancyDescriptionEditor vacancyId="vacancy-1" onSaved={vi.fn()} />);
 
     expect(screen.getByLabelText('Samenvatting')).toHaveAttribute('maxLength', '1000');
-    expect(screen.getByLabelText('Functieomschrijving')).toHaveAttribute('maxLength', '5000');
+    expect(screen.getByLabelText('Over de rol')).toHaveAttribute('maxLength', '5000');
   });
 
-  it('calls saveDescription with the current field values on save', async () => {
+  it('calls saveDescription with the current field values (whatWeOffer preserved from the draft, not rendered)', async () => {
     const user = userEvent.setup();
     vi.mocked(descriptionApi.saveDescription).mockResolvedValue({ summary: 'Written by hand' });
     const onSaved = vi.fn();
     render(<VacancyDescriptionEditor vacancyId="vacancy-1" onSaved={onSaved} />);
 
     await user.type(screen.getByLabelText('Samenvatting'), 'Written by hand');
-    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+    await user.click(screen.getByRole('button', { name: 'Concept opslaan' }));
 
     await waitFor(() =>
       expect(descriptionApi.saveDescription).toHaveBeenCalledWith(

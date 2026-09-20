@@ -49,6 +49,17 @@ describe('VacancyCoreForm', () => {
     vi.mocked(vacancyApi.patchVacancyCore).mockReset();
   });
 
+  it('shows the selected country ISO2 code as a suffix on the Land select', async () => {
+    const user = userEvent.setup();
+    render(<VacancyCoreForm vacancyId={null} onSaved={vi.fn()} />);
+
+    expect(screen.queryByText('NL', { selector: 'span' })).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Land'), 'NL');
+
+    expect(screen.getByText('NL', { selector: 'span' })).toBeInTheDocument();
+  });
+
   it('shows required-field validation errors and does not submit when the form is empty', async () => {
     const user = userEvent.setup();
     const onSaved = vi.fn();
@@ -136,17 +147,16 @@ describe('VacancyCoreForm', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Netwerkfout: de server is niet bereikbaar.');
   });
 
-  it('does not show "Concept opgeslagen" on first render, shows it after a successful save', async () => {
+  it('calls onSaved (page lifts "Concept opgeslagen" display, per §10.1 item 7) after a successful save', async () => {
     const user = userEvent.setup();
     vi.mocked(vacancyApi.createVacancy).mockResolvedValue(createdVacancy);
-    render(<VacancyCoreForm vacancyId={null} onSaved={vi.fn()} />);
-
-    expect(screen.queryByText(/Concept opgeslagen/)).not.toBeInTheDocument();
+    const onSaved = vi.fn();
+    render(<VacancyCoreForm vacancyId={null} onSaved={onSaved} />);
 
     await fillValidForm(user);
     await user.click(screen.getByRole('button', { name: 'Bewaren als concept' }));
 
-    expect(await screen.findByText(/Concept opgeslagen/)).toBeInTheDocument();
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith(createdVacancy));
   });
 
   it('renders the hours-per-week fields as read-only once a vacancyId already exists', () => {

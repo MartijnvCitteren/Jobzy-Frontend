@@ -35,4 +35,7 @@ export const vacancyApi = {
   patchVacancyContactOffer(id: string, body: VacancyContactOfferPatch): Promise<VacancyResponse> {
     return httpClient.patch<VacancyResponse>(`/vacancy/${id}`, body);
   },
+  publishVacancy(id: string): Promise<VacancyResponse> {
+    return httpClient.post<VacancyResponse>(`/vacancy/${id}/publish`, undefined);
+  },
 };

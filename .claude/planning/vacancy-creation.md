@@ -1,11 +1,16 @@
 # Plan: Vacancy creation frontend (feature slug: `vacancy-creation`)
 
-Status: FINAL — ready for `jobzy-frontend-developer`.
-Source spec: `specs/spec.md` (GitHub issue #4). Design source: `specs/design-notes.md`.
+Status: FINAL — ready for `jobzy-frontend-developer`. **Revised 2026-09-20** for
+design-parity with the real, high-fidelity handoff (see §10 below) — §1-9 are the
+original architecture pass and remain valid except where §10 explicitly supersedes them.
+Source spec: `specs/spec.md` (GitHub issue #4). Design source: `specs/design-notes.md`
+(now VERIFIED, see its own status line — supersedes its own 2026-09-19 approximate
+capture).
 Contract: `specs/vacancy.yml` (OpenAPI 3.1.1, `jobzy-contracts` VacancyApi, copied as-of 2026-09-19).
-Task list: `specs/tasks.md` (Speckit-style task IDs T001-T019, this plan is their source of truth).
+Task list: `specs/tasks.md` (Speckit-style task IDs T001-T033, this plan is their source of truth).
 Companion ADRs: `.claude/adr/0001-runtime-config-mechanism.md`,
-`.claude/adr/0002-hours-per-week-edit-after-creation.md`.
+`.claude/adr/0002-hours-per-week-edit-after-creation.md`,
+`.claude/adr/0003-design-token-adoption.md`, `.claude/adr/0004-dropdown-implementation.md`.
 
 This file is also mirrored at `.claude/planning/vacancy-creation.md` for
 `jobzy-frontend-developer`'s workflow, which reads plans from that fixed path. If the two
@@ -28,32 +33,29 @@ to `jobzy-contracts`/backend, don't try to route around them cleverly client-sid
    vacancy is created via `POST /vacancy`, there is no contract-valid way to change its
    hours-per-week afterward. See ADR-0002 for the resolution.
 2. **`SalaryPeriod` enum has no `DAILY`** (`HOURLY`/`MONTHLY`/`ANNUAL` only), but the
-   design notes describe a "per-dag" option in the Salarisperiode dropdown. Resolution:
+   design describes a "per-dag" option in the Salarisperiode dropdown. Resolution:
    build the Step 3 dropdown from the API enum (source of truth), i.e. 3 options, not 4.
-   Flagged in `specs/open-questions.md` for a human to confirm with design.
+   Confirmed unchanged by the verified design pass — flagged in `specs/open-questions.md`.
 
-Everything below assumes these two resolutions.
+Everything below assumes these two resolutions. `specs/vacancy.yml` uses singular
+`/vacancy` (not `/vacancies`) — confirmed still consistent with the design handoff's own
+`Jobzy_Vacancy_OpenAPI_Instructions.md` illustrative examples (which use plural as a
+generic illustration, not this repo's actual contract); no drift found between this
+repo's contract and the design handoff's assumptions about staged creation, JSON Merge
+Patch semantics, or the `/publish` endpoint's existence.
 
-## 2. Tech setup (new repo, nothing exists yet)
+## 2. Tech setup (already implemented, unchanged)
 
-- Vite + React 19 + TypeScript strict, `src/` houses all FSD layers.
-- `openapi-typescript` generates types (types only, no runtime client) from
-  `specs/vacancy.yml` into `src/shared/api/generated/vacancy-api.ts`, via an
-  `npm run generate:api` script. Generated output is committed (so CI/other devs don't
-  need to regenerate to build) and regenerated whenever `specs/vacancy.yml` changes.
-- Vitest + React Testing Library for unit/component tests; Playwright for exactly one
-  flow (see §7).
-- Steiger (`npx steiger ./src`) + an FSD ESLint plugin (`eslint-plugin-boundaries` or
-  `@feature-sliced/eslint-config`, developer's choice at implementation time) wired into
-  `npm run lint` and CI, enforcing layer-import direction and public-API-only imports
-  mechanically. This repo has neither yet — T001 sets both up as one of the first tasks,
-  since nothing else should land before the guardrail exists to catch it landing wrong.
-- Runtime config: `public/config.json`, fetched once at boot before the app renders.
-  See ADR-0001 for why this over `window.__ENV__`. Default committed
-  `public/config.json` points at `http://localhost:8080` per the spec's local-dev-only
-  scope; the mechanism itself (fetch + fail-fast validation) is real, not a stub.
+- Vite + React 19 + TypeScript strict, `src/` houses all FSD layers. Already scaffolded.
+- `openapi-typescript`-generated types committed at
+  `src/shared/api/generated/vacancy-api.ts`. Unchanged.
+- Vitest + React Testing Library; Playwright for the one `create-vacancy` flow (§7,
+  T017, already implemented — extend, don't replace, per §10.7 below).
+- Steiger + FSD ESLint boundary lint wired into `npm run lint`/CI. Already implemented —
+  every new slice in §10 must pass it, no exceptions.
+- Runtime config (`public/config.json`, ADR-0001). Unchanged, not touched by this pass.
 
-## 3. FSD layer plan
+## 3. FSD layer plan (original — see §10.2 for the revised, current layout)
 
 ```
 src/
@@ -80,323 +82,342 @@ src/
 ```
 
 Import direction is strictly `app → pages → widgets → features → entities → shared`.
-Note deliberately: this app has exactly one real page in scope, so most cross-page-reuse
-widgets don't exist yet. Only `app-shell` (navbar) earns widget status — it's plausibly
-reused once the dashboard/vacancies-list pages exist (out of scope here, but the shell
-chrome is already fully specified in the design notes as a global element, not
-page-specific). The wizard stepper is **not** promoted to a widget (see §3.4) — that's
-the pragmatic call, named explicitly.
+This section describes the layout as originally planned and as it exists in the repo
+today (all of it is implemented). §10.2 lists exactly what's added/changed on top of it
+for design parity — nothing here is deleted, this is additive plus several targeted
+reworks of feature internals (not their FSD placement).
 
-### 3.1 `shared/`
+### 3.1-3.6
 
-- `shared/api/generated/vacancy-api.ts` — openapi-typescript output. Never hand-edited;
-  regenerated only.
-- `shared/api/http-client.ts` — thin typed fetch wrapper. Reads the resolved base URL
-  from `shared/config`, attaches `Authorization` header when a token is available
-  (auth itself is out of scope for issue #4 — leave a `getAuthToken(): string | null`
-  seam returning `null` for now, don't stub a fake login), parses
-  `application/problem+json` bodies into a typed `ApiError` (fields: `title`, `status`,
-  `detail`, `errors?: {field, message}[]`) on non-2xx, and rejects with that `ApiError`
-  for every non-2xx response including network failures (mapped to a synthetic
-  `ApiError` with `status: 0`, `title: "Netwerkfout"` or similar) — this is what makes
-  "backend unreachable" a visible, catchable state everywhere instead of an unhandled
-  promise rejection.
-- `shared/config/runtime-config.ts` — `loadRuntimeConfig(): Promise<RuntimeConfig>` fetches
-  `/config.json`, validates shape (`apiBaseUrl: string`, non-empty, parseable as a URL)
-  with a small manual check (no need for a schema library for one field), throws a typed
-  `RuntimeConfigError` on missing/malformed/unreachable config. `getRuntimeConfig()`
-  synchronous accessor for already-resolved config, throws if called before boot
-  resolves (programmer error, not a runtime path).
-- `shared/lib/polling.ts` — `pollUntil<T>(fn, isDone, { intervalMs, timeoutMs })` generic
-  async polling utility (or a `usePolling` hook, developer's call at implementation time,
-  document the choice in the task's summary) — used only by
-  `generate-vacancy-description`, but generic and worth sharing since retry/poll needs
-  recur.
-- `shared/lib/problem-details.ts` — `toFieldErrors(errors: ApiError['errors']): Record<string, string>`
-  helper turning `ProblemDetails.errors[]` into a `{field: message}` map forms can key
-  off directly.
-- `shared/ui/` — `Button`, `TextField`, `NumberField`, `Select`, `SegmentedControl`,
-  `Card`, `ErrorBanner`, `Stepper` (generic: `steps: {label: string}[]`, `currentIndex:
-  number` — no business knowledge of "Basisgegevens" etc., that's supplied by the page).
-  Approximate the design tokens (dark green primary, warm off-white background, violet
-  `--surface-advice`) as CSS custom properties in `app/styles/tokens.css`, consumed by
-  these components — see ADR note in open-questions.md, exact hex/spacing values are a
-  pragmatic approximation this pass, flagged for a later pass against the real
-  `_ds` token files.
+Unchanged from the original pass — `shared/`, `entities/`, `features/`, `widgets/`,
+`pages/vacancy-create/`, `app/` are all implemented as originally planned in
+`src/`. See the repo itself as the source of truth for what exists; §10 below is the
+delta on top of it. (The original prose describing each slice is preserved in git
+history / the pre-2026-09-20 version of this file if needed for archaeology — not
+reproduced here to avoid this document drifting from the actual code as it evolves.)
 
-### 3.2 `entities/`
-
-- `entities/vacancy/`
-  - `model/types.ts` — re-exports/aliases the generated `VacancyResponse`,
-    `VacancyCoreRequest`, `VacancyUpdateRequest`, `VacancyCategory`, `WorkplaceType`,
-    `Location` types from `shared/api/generated`. Nothing hand-written here — this file
-    exists only to give the rest of the app one stable import path independent of
-    codegen output naming.
-  - `lib/labels.ts` — Dutch display-label maps for `VacancyCategory`, `WorkplaceType`,
-    driven off the API enum (21 categories, not the design note's 13 — API is source of
-    truth per spec). A **flat** select for category, not the design's "Software ·
-    Backend development" grouped display — see ADR-worthiness note in
-    open-questions.md; this is a named pragmatic simplification, not an oversight.
-  - `api/vacancyApi.ts` — the only place that calls `http-client` for vacancy core
-    concerns: `createVacancy(body: VacancyCoreRequest): Promise<VacancyResponse>`,
-    `patchVacancyCore(id, body: Pick<VacancyUpdateRequest, 'jobTitle'|'category'|'location'|'workplaceType'>): Promise<VacancyResponse>`
-    (deliberately excludes hours — see ADR-0002),
-    `patchVacancyContactOffer(id, body: Pick<VacancyUpdateRequest, 'contactPerson'|'offer'>): Promise<VacancyResponse>`.
-  - `index.ts` — public API: exported types, `labels`, `vacancyApi`. Nothing else is
-    reachable from outside this slice.
-- `entities/vacancy-description/`
-  - `model/types.ts` — aliases `VacancyDescriptionRequest`, `VacancyDescriptionResponse`,
-    `GenerateVacancyDescriptionRequest`, `VacancyDescriptionGeneration`,
-    `VacancyDescriptionGenerationStatus`.
-  - `api/descriptionApi.ts` — `generateDescription(vacancyId, body): Promise<VacancyDescriptionGeneration>`,
-    `getGenerationStatus(vacancyId, generationId): Promise<VacancyDescriptionGeneration>`,
-    `saveDescription(vacancyId, body: VacancyDescriptionRequest): Promise<VacancyDescriptionResponse>`.
-  - `index.ts` — public API.
-- `entities/location/`
-  - `model/countries.ts` — static list, EU27 + United Kingdom + Switzerland, each
-    `{ code: string (ISO 3166-1 alpha-2), labelNl: string }`, Dutch-sorted. Source this
-    list by hand once (not generated) — it's static reference data, not part of the API
-    contract.
-  - `index.ts` — exports `countries`.
-
-### 3.3 `features/` (one verb-noun feature per wizard step's action, plus generation)
-
-- `features/create-vacancy-core/` — Step 1 form (Functietitel, Categorie, Land, Stad,
-  Type werkplek segmented control, Uren per week min/max). Owns field-level validation
-  (required, `minLength`/`maxLength`/range per the schema) and submit: calls
-  `entities/vacancy`'s `createVacancy` on first submit (no `vacancyId` yet in wizard
-  state) or `patchVacancyCore` on a later resubmission (`vacancyId` already exists).
-  Surfaces `ApiError.errors` via `toFieldErrors` per-field, and a top-level
-  `ErrorBanner` for non-field errors (backend unreachable, 5xx). Exposes
-  `<VacancyCoreForm>` taking `vacancyId`, initial values, and `onSaved(vacancy)`.
-  Owns the "Concept opgeslagen \<timestamp\>" label logic (shown only after first
-  successful save, not on initial render — per the design's comment-log note).
-- `features/generate-vacancy-description/` — the "AI-kaart" advice-styled panel: form
-  for `mostImportantTasks`/`team`/`whyNiceJob` (each `maxLength: 1000`), a "Genereer met
-  AI" action calling `generateDescription`, then polling `getGenerationStatus` via
-  `shared/lib/polling` until `COMPLETED` or `FAILED`. On `COMPLETED`, hands the draft
-  `VacancyDescriptionResponse` up via `onGenerated(draft)` for
-  `edit-vacancy-description` to pre-fill. On `FAILED` or a start-call error, shows a
-  visible failure state inline in the card (never a silent stall) and does **not** block
-  the manual path below.
-- `features/edit-vacancy-description/` — manual fields (`summary`, `jobDescription`,
-  `tasks`, `whatWeOffer`, `aboutUs`), pre-filled from a completed generation when
-  present, otherwise empty for hand-written entry. Validates `maxLength` per field.
-  Saves via `entities/vacancy-description`'s `saveDescription`. This feature and
-  `generate-vacancy-description` are composed together on the page (Step 2), not nested
-  inside each other — the page passes the generated draft from one to the other's
-  initial-values prop. Neither feature imports the other directly (FSD: features don't
-  import sideways from other features).
-- `features/edit-vacancy-contact-offer/` — Step 3 form: `ContactPerson` (name, role,
-  phone, email) + `Offer` (salaryMin, salaryMax, currency, salaryPeriod — 3-option
-  dropdown per the real enum, numberOfHolidays). Enforces the documented-but-not-schema
-  rule "currency and salaryPeriod required once either salary field is present" as
-  client-side validation (the contract explicitly says this is enforced at the
-  application layer, not the schema). Saves via `patchVacancyContactOffer`.
-- `features/review-vacancy/` — Step 4: read-only summary assembled from the wizard's
-  already-in-memory state (no new GET call needed — every section was already persisted
-  incrementally by the prior steps' PATCH/POST calls, and the wizard holds the
-  latest-known `VacancyResponse` after each step). A "Voltooien" action that simply
-  confirms and navigates away (still `DRAFT` — publishing is out of scope). If the
-  in-memory state and a defensive re-fetch (`vacancyApi` doesn't expose `getVacancy` in
-  this pass — not needed since nothing else can mutate the vacancy concurrently in this
-  single-user flow) ever needs reconciling, that's a future concern, not this pass's.
-
-Each feature's `index.ts` exports only its top-level component(s) and the hook if the
-page needs to orchestrate step transitions around it (e.g.
-`useGenerateVacancyDescription` if the page needs to know generation is in-flight to
-disable "Volgende"). No feature reaches into another feature's or entity's internals
-beyond its `index.ts`.
-
-### 3.4 `widgets/`
-
-- `widgets/app-shell/` — navbar per design notes: logo, nav items (Dashboard, Vacatures
-  active, Kandidaten, Statistieken — all but "Vacatures" link to stub/placeholder routes
-  since only vacancy creation is in scope), avatar chip with initials. The account menu
-  (Account/Instellingen/Support) was never directly observed — build it as a static,
-  non-functional dropdown (renders the three labels, no navigation) rather than
-  inventing behavior; flagged in open-questions.md.
-
-**Pragmatic call, named explicitly:** the 4-step stepper is *not* its own widget. It's
-used on exactly one page in this pass, and promoting single-use UI to a widget slice
-just to satisfy layer ceremony is the kind of ritual FSD explicitly doesn't require —
-`shared/ui/Stepper` (generic, presentational) composed directly inside
-`pages/vacancy-create` with this page's own step labels is the pragmatic variant.
-**Strict/academic variant:** introduce `widgets/vacancy-wizard-stepper` now, wrapping
-`shared/ui/Stepper` with the 4 fixed Dutch labels, on the reasoning that any future
-multi-step flow (e.g. candidate pipeline stages) would reuse the *pattern* even if not
-this exact widget. Consequence of the strict variant: an extra empty-feeling slice for
-one caller, more indirection for the developer to trace through for zero present
-benefit. **Recommendation: pragmatic** — momentum over ceremony; revisit if/when a
-second wizard actually appears.
-
-### 3.5 `pages/vacancy-create/`
-
-- `ui/VacancyCreatePage.tsx` — the only piece holding cross-step wizard state:
-  `{ vacancyId: string | null, currentStep: 1|2|3|4, core: ..., description: ...,
-  contactOffer: ... }` as local `useState`/`useReducer` (no external store — this state
-  is genuinely page-local and doesn't need to survive a route change or be shared
-  outside this page). Renders `widgets/app-shell`, breadcrumb + title (page-level
-  markup, not worth their own slice), `shared/ui/Stepper` with this page's 4 labels, the
-  active step's feature component, and step footer actions ("Bewaren als concept" /
-  "Volgende", wired to each step feature's save handler). Advancing a step requires the
-  current step's save to have succeeded — "Volgende" is disabled while a save is
-  in-flight or the step is invalid, per the unhappy-flow requirement that failures must
-  be visible, not silently skipped.
-- `index.ts` — exports the route element only.
-
-### 3.6 `app/`
-
-- `app/main.tsx` — entry point: calls `loadRuntimeConfig()` before rendering
-  `<App />`; on failure, renders a minimal fail-fast error screen directly (not the full
-  app shell, since the app shell itself may depend on config) with the error detail
-  visible, no silent fallback URL, per the spec's explicit requirement.
-- `app/App.tsx` — top-level `ErrorBoundary` (catches render-time exceptions anywhere in
-  the tree, shows a visible fallback, never a blank screen — this is the "backend
-  unreachable" catch-all for anything the per-feature error handling doesn't already
-  cover) wrapping a minimal router.
-- `app/router.tsx` — two routes: `/` (redirects to `/vacancies/new` — no dashboard/list
-  page exists yet, stub only per spec's out-of-scope note) and `/vacancies/new`
-  (`pages/vacancy-create`). `react-router-dom`, minimal config, no nested layouts beyond
-  what `app-shell` already provides per-page.
-- `app/styles/tokens.css` — CSS custom properties approximating the design notes'
-  tokens (`--color-primary` dark green, `--color-bg` warm off-white, `--surface-advice`
-  violet, `--content-max`, `--radius-card` ~12px). Exact values are the developer's
-  pragmatic pick within the described palette — see open-questions.md for values that
-  need later confirmation against the real design-system files.
-
-## 4. API boundary summary
+## 4. API boundary summary (original — extended in §10.4)
 
 | Concern | Adapter method | Endpoint | Contract status |
 |---|---|---|---|
 | Create vacancy (Step 1, first save) | `vacancyApi.createVacancy` | `POST /vacancy` | Covered |
 | Edit core fields (Step 1, resubmit) | `vacancyApi.patchVacancyCore` | `PATCH /vacancy/{id}` | Covered *except hours* — ADR-0002 |
-| Start AI generation (Step 2) | `descriptionApi.generateDescription` | `POST /vacancy/{id}/generate-description` | Covered |
-| Poll generation status (Step 2) | `descriptionApi.getGenerationStatus` | `GET /vacancy/{id}/generate-description/{generationId}` | Covered |
-| Save manual/edited description (Step 2) | `descriptionApi.saveDescription` | `POST /vacancy/{id}/description` | Covered |
+| Start AI generation (Step 2 modal) | `descriptionApi.generateDescription` | `POST /vacancy/{id}/generate-description` | Covered |
+| Poll generation status | `descriptionApi.getGenerationStatus` | `GET /vacancy/{id}/generate-description/{generationId}` | Covered |
+| Save manual/edited description (Step 3/4) | `descriptionApi.saveDescription` | `POST /vacancy/{id}/description` | Covered |
 | Save contact + offer (Step 3) | `vacancyApi.patchVacancyContactOffer` | `PATCH /vacancy/{id}` | Covered |
-| Review (Step 4) | none — reads in-memory wizard state | — | N/A |
+| **Publish (Preview → Published)** | **`vacancyApi.publishVacancy` — new, §10.4** | `POST /vacancy/{id}/publish` | Covered, not yet wired client-side |
 
-No endpoint needed by this feature is missing from `specs/vacancy.yml` outright — the
-one gap (hours-per-week on PATCH) is a same-endpoint field gap, not a missing endpoint,
-handled per ADR-0002. All calls above route through `entities/vacancy` or
-`entities/vacancy-description`'s adapters — never `fetch`/the generated client directly
-from a feature, widget, or page. Auth (`Authorization: Bearer`) is out of scope for
-issue #4; `http-client` leaves the seam but doesn't fabricate a login flow.
+All calls route through `entities/vacancy` or `entities/vacancy-description`'s adapters
+— never `fetch`/the generated client directly from a feature, widget, or page. This
+discipline is already enforced and must not regress in any of §10's new slices.
 
-## 5. State management
+## 5. State management (original — extended in §10.5)
 
-Local/component state only, as decided. The only state worth naming explicitly:
+Local/component state only, as decided. Unchanged reasoning: wizard state is
+single-page, single-user, must not survive navigation or land in `localStorage`/
+`sessionStorage` (PII). §10.5 lists the additional state the page must now hold to
+support mode choice, view switching, and generation phase.
 
-- Wizard cross-step state lives in `pages/vacancy-create` (React `useState`/
-  `useReducer`), not a store library — it's single-page, single-user, doesn't need to
-  survive navigation away, and PII (contact name/email) living in it must never be
-  written to `localStorage`/`sessionStorage` (see §6) or a store's dev-tools-visible
-  global state. Component state that unmounts cleanly is the safer default here, not
-  just the simpler one.
-- Runtime config is the one genuinely cross-cutting piece of "global" data (needed by
-  every API call, resolved once at boot, never changes during a session) — that's
-  exactly the case that earns a module-level singleton (`shared/config/runtime-config`'s
-  `getRuntimeConfig()`) instead of prop-drilling or a store library. Not a precedent for
-  reaching for global state elsewhere.
-
-## 6. PII handling
+## 6. PII handling (unchanged)
 
 `ContactPerson` (name, email, phone) is the only candidate/personal-data-shaped input in
-this feature (no CV, no candidate data yet — that's phase 2). Explicit rules for this
-pass:
+this feature. Rules unchanged: never log it, never persist wizard state to browser
+storage, `http-client` error logging never echoes `errors[].message` verbatim. The new
+preview screen renders the contact line **read-only, on-screen only** — same rule
+applies (no analytics event, no storage). The published-confirmation screen shows only
+the job title, no PII.
 
-- Never log `ContactPerson` fields, full request/response bodies, or `ApiError.detail`
-  (which could echo submitted field values) to the console beyond what's needed for a
-  visible on-screen error — no `console.log(response)` debugging left in, no analytics
-  event carrying form values.
-- Do not persist wizard state (including Step 3's contact person) to `localStorage` or
-  `sessionStorage`. This pass has no "resume draft after refresh" requirement — don't
-  add draft-persistence as a bonus; it would silently create a PII-at-rest concern in
-  browser storage that isn't in scope to secure/clear properly yet.
-- `http-client` error logging (for genuine developer-facing diagnostics) must log status
-  codes and `title`/`type`, never `errors[].message` verbatim if those could echo
-  submitted PII back (unlikely per this schema's validation messages, but the rule is
-  cheap to hold to regardless).
+## 7. Test plan (original — extended in §10.6)
 
-## 7. Test plan
+Original Vitest/RTL and Playwright plan stands for all already-implemented slices.
+§10.6 lists what's added for the new/reworked slices — same standard (real logic gets a
+failing-test-first Vitest/RTL case; purely presentational wrappers don't need dedicated
+tests, noted explicitly per task rather than silently skipped).
 
-**Vitest + RTL** (the default, every feature/entity/shared piece with real logic):
+## 8. Architectural risks (original — see §10.8 for new/updated risks)
 
-- `shared/config/runtime-config` — boot succeeds with valid config; fails fast (visible
-  error, no fallback URL) on missing file, malformed JSON, and missing `apiBaseUrl`.
-- `shared/api/http-client` — success path typing, `ProblemDetails` parsing into
-  `ApiError` on 400/401/403/404/409/500, network-failure-to-`ApiError` mapping.
-- `shared/lib/polling` — resolves on `isDone`, times out per `timeoutMs`, stops polling
-  after resolution/timeout (no dangling interval).
-- `entities/vacancy/api`, `entities/vacancy-description/api` — each adapter method
-  against a mocked `http-client` (or `msw`, developer's call): correct method/path/body,
-  correct return shape.
-- `features/create-vacancy-core` — required-field validation, first-save calls
-  `createVacancy`, resubmit calls `patchVacancyCore`, field errors from a mocked 400
-  render per-field, "Concept opgeslagen" label absent on first render / present after a
-  successful save.
-- `features/generate-vacancy-description` — start → `PENDING` → poll → `COMPLETED` hands
-  the draft up; `FAILED` (and a start-call error) render a visible failure and leave the
-  manual path usable (assert the manual-fields feature isn't disabled/hidden by a
-  failure — test this at the page-integration level if that's a cleaner seam than
-  reaching across features).
-- `features/edit-vacancy-description` — `maxLength` validation, pre-fill from a passed
-  draft, save calls `saveDescription`.
-- `features/edit-vacancy-contact-offer` — the "currency+salaryPeriod required once a
-  salary field is present" client-side rule, save calls `patchVacancyContactOffer`.
-- `features/review-vacancy` — renders the assembled summary from given wizard state.
-- `pages/vacancy-create` — integration-level: step navigation gated on successful save,
-  a simulated backend-unreachable response at any step shows a visible error (not a
-  blank screen), full happy-path click-through reaches Step 4.
-- `widgets/app-shell` — active nav item styling, avatar chip renders initials.
-- `shared/ui` — cheap smoke/interaction tests for components with real logic
-  (`SegmentedControl` selection, `Select`, `Stepper` active/inactive rendering,
-  `ErrorBanner` visibility); purely presentational wrappers (e.g. `Card`) don't need a
-  dedicated test — note this explicitly so the developer doesn't over-test styling.
+- **Contract gap (hours-per-week on PATCH)** — unchanged, ADR-0002 still governs.
+- Steiger/FSD-lint — already landed (T001), no longer a live risk.
+-~~"Design notes are only fully observed for Step 1"~~ — **resolved by this revision**:
+  the verified design pass (`specs/design-notes.md`) now covers every screen. See §10.8
+  for the risks this revision itself introduces.
+- `public/config.json` vs `.env` — unchanged, not touched by this pass.
 
-**Playwright** — exactly one flow earns it, per the architect guidance of a handful of
-genuinely critical flows, not one per screen:
+## 9. Task list (superseded — see §10.9 and `specs/tasks.md`)
 
-- **`create-vacancy` happy path**: open "Nieuwe vacature" → fill Step 1 → Volgende →
-  fill Step 2 manually (skip AI to keep the test deterministic and fast — AI generation
-  is already covered at the Vitest/RTL level with mocked polling) → Volgende → fill Step
-  3 → Volgende → Step 4 → Voltooien. Run against a mocked backend (Playwright route
-  interception or `msw` in the browser) — no real backend dependency in CI. This is the
-  one flow explicitly named as canonical in the architect's own tech-context guidance
-  ("create-vacancy" is listed as an example critical flow), and it's the entire scope of
-  this feature end to end, so it's the right (and only) candidate here.
+`specs/tasks.md` now runs T001-T033: T001-T019 are the original pass (all implemented
+and reviewed — do not redo them), T020-T032 are this revision's new/rework tasks
+(§10.9), and **T033 is the new, single trailing `[review-gate]` task**, depending on
+every implementation task including the original T001-T018 and the new T020-T032 (T019,
+the original review-gate, is superseded — its sign-off stands for what it reviewed, but
+final sign-off for the feature as a whole now happens at T033).
 
-No other flow in this feature earns a second Playwright test — the unhappy paths
-(backend unreachable, generation failure, field validation) are cheaper and more
-precisely asserted at the Vitest/RTL level already.
+---
 
-## 8. Architectural risks (explicit)
+## 10. Design-parity revision (2026-09-20)
 
-- **Contract gap (hours-per-week on PATCH)** — real risk if a future task assumes
-  Step-1 fields are fully re-editable after creation; ADR-0002 documents the workaround
-  and the upstream fix needed. Severity: low for this pass (creation-then-forward flow
-  doesn't require going back), but will resurface the moment a "go back and edit
-  everything" UX is requested — flag now so it isn't rediscovered mid-implementation of
-  a future edit-vacancy feature.
-- **Steiger/FSD-lint not yet configured in this repo** — until T001 lands, every
-  subsequent task is a chance for an import-direction violation to go unnoticed until
-  the single end-of-feature review. Sequencing T001 first is the mitigation; if it slips
-  behind other tasks, the guardrail arrives too late to catch anything.
-- **Design notes are only fully observed for Step 1** — Steps 2-4 are contract- and
-  stepper-label-inferred, not pixel-verified. Risk is cosmetic/layout mismatch on
-  rebuild against the real design file, not a functional risk (the underlying data/API
-  wiring is contract-driven, not design-driven). Acceptable to proceed — flagged in
-  open-questions.md for a later visual pass.
-- **`public/config.json` is a static file Vite serves as-is from `public/`** — if a
-  developer instead puts config values in `.env`/`import.meta.env` out of habit (very
-  common Vite reflex), that silently reintroduces build-time config and defeats the
-  entire point of this mechanism (one build artifact promoted across environments).
-  Worth the developer explicitly not reaching for `.env` here; called out in T002.
+Trigger: the real, high-fidelity design handoff (`design_handoff_vacancy_creation/`) is
+now available and has been read in full (`specs/design-notes.md` is the verified
+capture, cited by README section throughout). The first implementation pass shipped
+against approximate, Step-1-only-observed design notes; this revision closes every gap
+between what's built and what the real handoff specifies, for **full parity**: all
+screens, all modals, all tokens, tablet-down-to-1024px responsiveness. Confirmed scope
+with the user: no mobile (<640px) support required, matching the design's own
+"not designed yet" note.
 
-## 9. Task list
+### 10.1 What's a style gap vs. what's a real behavioural gap
 
-See `specs/tasks.md` for the ordered, ID-tagged breakdown
-(`jobzy-frontend-developer` works from that file one task at a time). It ends with a
-single `[review-gate]` task depending on every implementation task, per this team's
-end-of-feature review cadence.
+Read this before assigning tasks — it changes how much rework each task actually is.
+
+**Pure style/token gaps** (component exists, logic is right, CSS needs to match the real
+tokens): navbar chrome, Step 1's pill toggle styling, card/input/button visual chrome
+across every step, salary/contact grid layout, chip/badge styling in the (new) preview
+screen.
+
+**Real behavioural gaps** (logic itself is missing or shaped wrong, not just unstyled):
+
+1. **Step 2 is currently a dual-panel step (AI inputs + manual fields shown together);
+   the design is a mode-choice step** (`design-notes.md` "Step 2 — Vacaturetekst").
+   `mode: null | 'manual' | 'ai'` doesn't exist as page state today.
+2. **The 3-questions modal doesn't exist.** AI question inputs are currently inline on
+   step 2, not gated behind step 2's "Volgende" via a modal.
+3. **Step 3 doesn't have two variants.** Description editing currently happens entirely
+   on step 2 (`edit-vacancy-description`); the design puts it on step 3 (manual mode
+   only) or shows a generating/ready banner instead (AI mode).
+4. **Step 4 ("Overzicht") is read-only today; the design makes it editable** — job
+   description sections are editable textareas with per-section "Opnieuw" regenerate in
+   AI mode, plus "Aanpassen" links back to steps 1 and 3, plus skeleton loading while
+   generation is in flight.
+5. **No "Liever niet delen" salary-hidden checkbox** — `edit-vacancy-contact-offer`
+   always shows salary fields.
+6. **The Stepper is presentational only** — no click-to-navigate, no reachability
+   gating (steps 3-4 blocked until a mode is chosen).
+7. **"Concept opgeslagen" is rendered inside the Step 1 card**, not page-level next to
+   the H1 as the design specifies — needs lifting to `pages/vacancy-create`.
+8. **Preview view, Published view, and the publish-confirmation modal don't exist at
+   all** — entirely new screens/features, no prior partial implementation to build on.
+9. **`vacancyApi` has no `publishVacancy` method** — `POST /vacancy/{id}/publish` is in
+   the contract and unused.
+10. **The account-menu dropdown is a static list**, not an interactive open/close menu
+    with outside-click dismissal.
+11. **Dropdowns are unstyled native `<select>`s** with no ISO2 mono suffix for Land —
+    see ADR-0004 for the resolution (restyled native `<select>`, not a rebuild).
+
+### 10.2 Revised FSD layer plan
+
+Additive on top of the existing tree (§3), nothing removed:
+
+```
+src/
+  app/
+    styles/tokens.css          — REPLACED wholesale, ADR-0003 (T020)
+  widgets/
+    app-shell/                 — REWORKED: real chrome, icons, interactive account menu (T021)
+  features/
+    choose-vacancy-text-mode/  — NEW: Step 2 mode-choice UI (T023)
+    generate-vacancy-description/  — REWORKED: owns the 3-questions modal +
+                                      a `useGenerateVacancyDescription` phase hook,
+                                      no longer renders inline on step 2 (T024)
+    edit-vacancy-description/  — REWORKED: moves to Step 3 (manual variant only),
+                                  drops the "Volgende" duplication with step 4 (T025)
+    edit-vacancy-contact-offer/ — REWORKED: two variants (manual adds description
+                                   fields; both add "Liever niet delen" + AI banner) (T026)
+    review-vacancy/            — REWORKED: editable Overzicht, skeletons, "Opnieuw",
+                                  "Aanpassen" links, "Bekijk je vacature" → view switch (T027)
+    preview-vacancy/           — NEW: candidate's-view screen (T028)
+    publish-vacancy/           — NEW: publish-confirmation modal + publish call +
+                                  the Published confirmation screen (same lifecycle,
+                                  kept together — see reasoning below) (T029)
+  entities/
+    vacancy/
+      api/vacancyApi.ts        — add `publishVacancy` (T022)
+  shared/
+    ui/
+      Modal.tsx                — NEW: generic modal (focus trap, Escape, scrim),
+                                  used by both new modals (T020b)
+      Skeleton.tsx             — NEW: animated bar loading primitive (T020b)
+      Checkbox.tsx             — NEW: "Liever niet delen" (T020b)
+      ChoiceCard.tsx           — NEW: the two Step 2 mode cards' shared shell (T020b)
+```
+
+**FSD placement reasoning for the two new features:**
+
+- `features/preview-vacancy` — a verb-noun feature ("preview the vacancy"), reads the
+  in-memory `VacancyResponse` (no new GET), renders the candidate-facing layout, and
+  exposes the footer actions (Terug/Bewaren als concept/Publiceer vacature). It's
+  feature-shaped (one clear user action: review-as-candidate + trigger publish intent),
+  not a widget — it's used on exactly one page, same reasoning as the existing stepper
+  pragmatic-call precedent in §3.4.
+- `features/publish-vacancy` — owns the **publish lifecycle** end to end: the
+  confirmation modal, the `publishVacancy` call, and the resulting Published screen.
+  These three are kept in one feature (not three) because they're one state machine
+  (`idle → confirming → publishing → published`), not three independent concerns; splitting
+  them would force the page to shuttle publish-in-flight state between three feature
+  boundaries for no reuse benefit (none of the three pieces is independently reusable
+  elsewhere). If a future page ever needs to trigger a publish-confirmation modal
+  without the full-page Published screen (e.g. a future vacancies-list page's "publish"
+  row action), split `PublishConfirmModal` out at that point — not preemptively now.
+- Neither feature imports the other's internals; the page (`pages/vacancy-create`)
+  orchestrates `view` transitions between them, per existing FSD discipline (features
+  don't import sideways).
+
+### 10.3 Public API / index.ts discipline for the new slices
+
+- `features/choose-vacancy-text-mode/index.ts` exports `<VacancyTextModeChoice>` only
+  (props: `mode`, `onModeChange`, `onNext` — page owns `mode` state, this feature is a
+  controlled component, consistent with the existing pattern of features not owning
+  cross-step state themselves).
+- `features/generate-vacancy-description/index.ts` exports `<ThreeQuestionsModal>`,
+  `useGenerateVacancyDescription()` (the phase/poll hook), and its existing types. The
+  hook is the seam `review-vacancy` (for skeletons/"Opnieuw") and
+  `edit-vacancy-contact-offer` (for the generating/ready banner) both need — **it must
+  live here, not be duplicated**, since this feature already owns the
+  generate+poll API calls. Both consumers receive `phase`/`result`/`regenerate` via
+  props from the page, which holds the hook instance — features still don't import each
+  other directly.
+- `features/preview-vacancy/index.ts` exports `<VacancyPreview>` only.
+- `features/publish-vacancy/index.ts` exports `<PublishConfirmModal>`,
+  `<PublishedConfirmation>`, and `usePublishVacancy()` (owns the `publishVacancy` call +
+  its own loading/error state — page doesn't need to know the HTTP details, just
+  `publish(): Promise<VacancyResponse>` and a `publishing`/`error` pair).
+- `shared/ui/index.ts` gains `Modal`, `Skeleton`, `Checkbox`, `ChoiceCard` exports.
+
+No feature reaches into another feature's or entity's internals beyond its `index.ts` —
+this doesn't change from the original plan's discipline.
+
+### 10.4 API boundary additions
+
+| Concern | Adapter method | Endpoint |
+|---|---|---|
+| Publish (Preview → Published) | `vacancyApi.publishVacancy(id): Promise<VacancyResponse>` | `POST /vacancy/{id}/publish` |
+
+No other new endpoint is needed — every other new screen reads the already-in-memory
+`VacancyResponse`/`VacancyDescriptionResponse` the wizard already holds. `publishVacancy`
+must surface a `409 Conflict` (illegal transition, per the contract's Problem Details
+spec) as a visible `ErrorBanner` in the publish-confirmation modal, not a silent failure
+or an uncaught rejection — same unhappy-path discipline as every other adapter call.
+
+### 10.5 State management additions
+
+`pages/vacancy-create/ui/VacancyCreatePage.tsx` gains, on top of its existing
+`currentStep`/`vacancy`/`generatedDraft` state:
+
+- `view: 'wizard' | 'preview' | 'published'` — drives which top-level screen renders.
+- `mode: null | 'manual' | 'ai'` — set by `choose-vacancy-text-mode`, gates step 2's
+  "Volgende" (disabled while `null`) and steps 3-4's stepper-click reachability.
+- `questionsOpen: boolean` — 3-questions modal visibility.
+- `confirmOpen: boolean` — publish-confirmation modal visibility.
+- `hasSaved: boolean` / `savedAt: string | undefined` — lifted up from
+  `create-vacancy-core` (which currently owns this locally); rendered next to the H1,
+  not inside the step 1 card. `create-vacancy-core` calls `onSaved` (already does) and
+  the page sets `hasSaved`/`savedAt` from that, same as it already threads `onSaved`
+  into `setVacancy`.
+- The generation phase (`idle | generating | ready | failed`) lives in the
+  `useGenerateVacancyDescription()` hook instance the page holds (§10.3) — not
+  duplicated as separate page state.
+
+Still no store library — this is still genuinely page-local, single-user state; the
+addition of `view`/`mode`/modal-open booleans doesn't change the reasoning in §5, it's
+just more of the same kind of state.
+
+### 10.6 Test plan additions
+
+**Vitest + RTL:**
+
+- `shared/ui/Modal` — traps focus, closes on Escape and on scrim click, returns focus
+  to the trigger on close.
+- `shared/ui/Skeleton`, `Checkbox`, `ChoiceCard` — `Skeleton` and `Checkbox` get a
+  cheap render/interaction test (checked state toggles, ARIA); `ChoiceCard` is mostly
+  presentational (selected/unselected classNames) — a single snapshot-style assertion is
+  enough, don't over-test styling per the existing plan's own explicit note.
+- `features/choose-vacancy-text-mode` — "Volgende" disabled until a mode is picked,
+  label changes to "Beantwoord 3 vragen" in AI mode, `onNext` fires with the chosen mode.
+- `features/generate-vacancy-description` — `ThreeQuestionsModal` submit calls
+  `generateDescription` + starts polling and closes itself; `useGenerateVacancyDescription`
+  hook's phase transitions (`idle→generating→ready`, `idle→generating→failed`) with fake
+  timers, `regenerate(section)` re-triggers generation and only replaces the requested
+  section (see open-questions.md new #10 on this simplification's exact shape).
+- `features/edit-vacancy-contact-offer` — "Liever niet delen" hides the salary grid and
+  clears/nulls salary fields on save; AI-mode banner reflects the shared generation
+  phase (`generating` violet / `ready` teal) via a prop, not its own polling.
+- `features/review-vacancy` — skeleton renders while `phase === 'generating'`; editable
+  textareas save via `saveDescription`; "Opnieuw" wired to `regenerate`; "Aanpassen"
+  links call the page's step-navigation callback with the right target step.
+- `features/preview-vacancy` — renders chips/sections from a given `VacancyResponse`;
+  "Solliciteren" is disabled; "Publiceer vacature" opens `confirmOpen` (assert via the
+  callback prop, not by reaching into `publish-vacancy`'s internals).
+- `features/publish-vacancy` — modal calls `publishVacancy` on confirm, surfaces a 409
+  as a visible error and does not transition `view`; on success transitions to
+  `PublishedConfirmation` with the vacancy title.
+- `widgets/app-shell` — account menu opens on click, closes on outside mousedown,
+  matches the existing `[data-dd]`-equivalent pattern.
+- `pages/vacancy-create` — full click-through **twice**: once for manual mode (step 1 →
+  step 2 choose manual → step 3 manual variant → step 4 → preview → publish → published),
+  once for AI mode (step 2 choose AI → 3-questions modal → step 3 AI variant/banner →
+  step 4 skeleton → ready → preview → publish → published) — this is the actual
+  integration surface that proves the mode-branching behaviour end to end, more valuable
+  here than in either individual feature's isolated test.
+- Tablet-width regression: a component/page test asserting the multi-field grids
+  (`repeat(auto-fit, minmax(...))`) don't require a media query to reflow — assert via
+  computed style or a snapshot at a reduced container width if the test setup supports
+  it; if not practically assertable in JSDOM (grid reflow is a real-layout concern
+  JSDOM doesn't compute), downgrade this to a manual verification step recorded in the
+  task summary (open a real browser at ~800px width) rather than a fake-passing test.
+
+**Playwright** — extend the existing single `create-vacancy` flow (T017) rather than
+adding a second flow: it must now also exercise the mode choice (manual, to keep it
+deterministic — same reasoning as the original plan), the new step 4 editable overzicht,
+the preview screen, and the publish confirmation through to the Published screen. This
+is still the one canonical end-to-end flow for this feature — extending it to its now-
+longer real length is the right call, not a second Playwright test for "preview" or
+"published" in isolation.
+
+### 10.7 Responsive (tablet, down to ~768-1024px)
+
+No new component-level task beyond what §10.2's CSS rework already requires — this is a
+cross-cutting CSS discipline applied while building every new/reworked slice, not a
+separate feature. Task T032 is a dedicated **verification** pass (not new
+implementation): resize every screen down to 768px and 1024px and confirm every
+`repeat(auto-fit, minmax(...))` grid (Step 1's Land+Stad and hours-min/max rows, Step
+3's contact and salary rows, Step 2's choice-card grid) reflows to single/double column
+without a horizontal scrollbar or clipped content, and that header rows (`flex-wrap:
+wrap`) don't overlap. Record pass/fail per screen in the task summary. Confirmed with
+the user: no mobile (<640px) support required.
+
+### 10.8 Architectural risks (this revision)
+
+- **Shared generation-phase hook fan-out** (§10.3): `useGenerateVacancyDescription`'s
+  phase now drives three consumers (step 3's banner, step 4's skeleton/regenerate, and
+  the modal that starts it) via page-held state instead of each owning its own polling.
+  Real risk if a future developer reaches for a second polling instance "for
+  convenience" instead of threading the existing one through props — would silently
+  double the generation calls against the backend. Mitigate by making this explicit in
+  the task instructions (T024, T026, T027) and flagging it again at the review gate.
+- **Step 4 becoming editable is a bigger behavioural change than a visual one** — the
+  original plan's `review-vacancy` was deliberately read-only ("no new GET call needed…
+  every section was already persisted"). It's still true no new GET is needed, but
+  "editable" means step 4 now makes its own `saveDescription` PATCH calls, which the
+  original plan's architecture didn't anticipate. Not a layering violation (still routes
+  through `entities/vacancy-description`'s existing adapter), but worth naming so nobody
+  mistakes this for scope creep — it's a confirmed, cited design requirement
+  (`design-notes.md` "Step 4 — Overzicht: editable, not read-only"), not an invented one.
+- **"Opnieuw" (regenerate) has no dedicated backend endpoint** — the contract only has
+  one `generate-description` call producing the whole description in one shot. Per-section
+  regenerate is a client-side simplification (re-run generation, keep only the requested
+  section's new value, discard the rest) — see open-questions.md new #10. Low severity
+  (cosmetic mismatch between "feels like per-section AI" and "actually re-runs the whole
+  generation"), but worth a human confirming this UX reads honestly rather than
+  misleadingly before it ships.
+- **Logo/icon assets are reconstructions, not final brand files** (`design-notes.md`
+  "Assets") — low severity, cosmetic, flagged for a pre-ship swap, not blocking this
+  pass.
+- **New `lucide-react` dependency** — first icon library in this codebase; low risk, but
+  note it in the task summary so it's visible in the diff rather than silently appearing
+  in `package.json`.
+
+### 10.9 New/revised task list
+
+See `specs/tasks.md` T020-T033 for the ordered, ID-tagged breakdown. T020-T032 are
+implementation tasks (all traceable to this section); T033 is the single trailing
+`[review-gate]` task depending on all of T001-T018 and T020-T032.

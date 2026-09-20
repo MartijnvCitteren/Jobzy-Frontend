@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { descriptionApi, type VacancyDescriptionResponse } from '../../../entities/vacancy-description';
 import type { ApiError } from '../../../shared/api';
 import { Button, Card, ErrorBanner, TextField } from '../../../shared/ui';
+import styles from './VacancyDescriptionEditor.module.css';
 
 export interface VacancyDescriptionEditorProps {
   vacancyId: string;
@@ -66,7 +67,7 @@ export function VacancyDescriptionEditor({ vacancyId, draft, onSaved }: VacancyD
         multiline
       />
       <TextField
-        label="Functieomschrijving"
+        label="Over de rol"
         value={values.jobDescription}
         onChange={(value) => setField('jobDescription', value)}
         maxLength={fieldMaxLengths.jobDescription}
@@ -77,24 +78,18 @@ export function VacancyDescriptionEditor({ vacancyId, draft, onSaved }: VacancyD
         value={values.tasks}
         onChange={(value) => setField('tasks', value)}
         maxLength={fieldMaxLengths.tasks}
+        helperText="Eén taak per regel"
         multiline
       />
       <TextField
-        label="Wat wij bieden"
-        value={values.whatWeOffer}
-        onChange={(value) => setField('whatWeOffer', value)}
-        maxLength={fieldMaxLengths.whatWeOffer}
-        multiline
-      />
-      <TextField
-        label="Over ons"
+        label="Team en organisatie"
         value={values.aboutUs}
         onChange={(value) => setField('aboutUs', value)}
         maxLength={fieldMaxLengths.aboutUs}
         multiline
       />
-      <Button type="button" disabled={saving} onClick={save}>
-        Volgende
+      <Button type="button" className={styles.saveDraftButton} disabled={saving} onClick={save}>
+        Concept opslaan
       </Button>
     </Card>
   );

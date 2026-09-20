@@ -78,4 +78,96 @@ describe('VacancyContactOfferForm', () => {
     );
     expect(onSaved).toHaveBeenCalledWith(vacancy);
   });
+
+  it('hides the salary grid and clears salary fields on save when "Liever niet delen" is checked', async () => {
+    const user = userEvent.setup();
+    vi.mocked(vacancyApi.patchVacancyContactOffer).mockResolvedValue(vacancy);
+    render(<VacancyContactOfferForm vacancyId="vacancy-1" onSaved={vi.fn()} />);
+
+    await fillContactPerson(user);
+    await user.type(screen.getByLabelText('Salaris minimum'), '3000');
+    await user.click(screen.getByRole('checkbox', { name: 'Liever niet delen' }));
+
+    expect(screen.queryByLabelText('Salaris minimum')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+
+    await waitFor(() =>
+      expect(vacancyApi.patchVacancyContactOffer).toHaveBeenCalledWith(
+        'vacancy-1',
+        expect.objectContaining({
+          offer: expect.objectContaining({
+            salaryMin: null,
+            salaryMax: null,
+            currency: undefined,
+            salaryPeriod: undefined,
+          }),
+        }),
+      ),
+    );
+  });
+
+  it('renders a generating banner in AI mode driven by the phase prop, without polling itself', async () => {
+    render(<VacancyContactOfferForm vacancyId="vacancy-1" onSaved={vi.fn()} mode="ai" phase="generating" />);
+
+    expect(
+      screen.getByText(
+        'We stellen je vacaturetekst op — ga jij alvast verder met contact en voorwaarden.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('renders a ready banner in AI mode when phase is ready', async () => {
+    render(<VacancyContactOfferForm vacancyId="vacancy-1" onSaved={vi.fn()} mode="ai" phase="ready" />);
+
+    expect(
+      screen.getByText('Je concepttekst staat klaar — je ziet hem in het overzicht bij de volgende stap.'),
+    ).toBeInTheDocument();
+  });
+
+  it('prefills fields from initialValues so navigating back does not lose saved data', async () => {
+    render(
+      <VacancyContactOfferForm
+        vacancyId="vacancy-1"
+        onSaved={vi.fn()}
+        initialValues={{
+          contactPerson: { name: 'Jane Doe', email: 'jane@example.com', role: 'Recruiter', phone: '0612345678' },
+          offer: { salaryMin: 4000, salaryMax: 5000, currency: 'EUR', salaryPeriod: 'MONTHLY', numberOfHolidays: 25 },
+        }}
+      />,
+    );
+
+    expect(screen.getByLabelText('Naam')).toHaveValue('Jane Doe');
+    expect(screen.getByLabelText('E-mailadres')).toHaveValue('jane@example.com');
+    expect(screen.getByLabelText('Salaris minimum')).toHaveValue(4000);
+    expect(screen.getByLabelText('Salaris maximum')).toHaveValue(5000);
+    expect(screen.getByLabelText('Valuta')).toHaveValue('EUR');
+    expect(screen.getByLabelText('Salarisperiode')).toHaveValue('MONTHLY');
+  });
+
+  it('resaves the prefilled salary values unchanged when clicking Volgende again', async () => {
+    const user = userEvent.setup();
+    vi.mocked(vacancyApi.patchVacancyContactOffer).mockResolvedValue(vacancy);
+    render(
+      <VacancyContactOfferForm
+        vacancyId="vacancy-1"
+        onSaved={vi.fn()}
+        initialValues={{
+          contactPerson: { name: 'Jane Doe', email: 'jane@example.com' },
+          offer: { salaryMin: 4000, salaryMax: 5000, currency: 'EUR', salaryPeriod: 'MONTHLY' },
+        }}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+
+    await waitFor(() =>
+      expect(vacancyApi.patchVacancyContactOffer).toHaveBeenCalledWith(
+        'vacancy-1',
+        expect.objectContaining({
+          offer: expect.objectContaining({ salaryMin: 4000, salaryMax: 5000, currency: 'EUR', salaryPeriod: 'MONTHLY' }),
+        }),
+      ),
+    );
+  });
 });

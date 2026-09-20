@@ -11,6 +11,8 @@ export interface TextFieldProps {
   multiline?: boolean;
   disabled?: boolean;
   helperText?: string;
+  /** Bolds this field's label — scoped opt-in for callers like the 3-questions modal (design README's "weight 600" spec), not a global label-weight change. */
+  boldLabel?: boolean;
 }
 
 export function TextField({
@@ -23,12 +25,14 @@ export function TextField({
   multiline,
   disabled,
   helperText,
+  boldLabel,
 }: TextFieldProps) {
   const id = useId();
   const Element = multiline ? 'textarea' : 'input';
+  const labelClassName = boldLabel ? `${styles.label} ${styles.labelBold}` : styles.label;
   return (
     <div className={styles.field}>
-      <label htmlFor={id} className={styles.label}>
+      <label htmlFor={id} className={labelClassName}>
         {label}
       </label>
       <Element
