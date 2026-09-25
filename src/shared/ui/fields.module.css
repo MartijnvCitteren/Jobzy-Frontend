@@ -41,6 +41,13 @@ textarea.control {
   resize: vertical;
 }
 
+select.control {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 44px;
+}
+
 .control[aria-invalid='true'] {
   border-color: var(--border-error);
 }
@@ -50,17 +57,29 @@ textarea.control {
 }
 
 .controlWithSuffix {
-  padding-right: calc(var(--space-3) * 2 + 2ch);
   width: 100%;
+}
+
+select.controlWithSuffix {
+  padding-right: calc(44px + 2ch + var(--space-2));
 }
 
 .suffix {
   position: absolute;
   top: 50%;
-  right: var(--space-3);
+  right: 44px;
   transform: translateY(-50%);
   font-family: var(--font-mono);
   font-size: var(--text-label-size);
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.chevron {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  transform: translateY(-50%);
   color: var(--text-secondary);
   pointer-events: none;
 }

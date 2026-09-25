@@ -21,9 +21,6 @@ export function VacancyPreview({ vacancy, description, onBack, onSaveDraft, onRe
     <div>
       <p>Stap 4 van 4 · voorvertoning</p>
       <h1>Zo ziet een sollicitant je vacature</h1>
-      <button type="button" onClick={onBack}>
-        Tekst aanpassen
-      </button>
 
       <Card className={styles.card}>
         <div className={styles.header}>

@@ -9,7 +9,7 @@ export type { TextFieldProps } from './TextField';
 export { NumberField } from './NumberField';
 export type { NumberFieldProps } from './NumberField';
 export { Select } from './Select';
-export type { SelectProps, SelectOption } from './Select';
+export type { SelectProps, SelectOption, SelectSeparator, SelectItem } from './Select';
 export { SegmentedControl } from './SegmentedControl';
 export type { SegmentedControlProps, SegmentedControlOption } from './SegmentedControl';
 export { ErrorBanner } from './ErrorBanner';

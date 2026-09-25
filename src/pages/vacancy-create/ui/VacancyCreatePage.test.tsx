@@ -56,7 +56,7 @@ function renderPage() {
   );
 }
 
-async function completeStep1(user: ReturnType<typeof userEvent.setup>) {
+async function fillStep1Fields(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Functietitel'), 'Senior Backend Developer');
   await user.selectOptions(screen.getByLabelText('Categorie'), 'ENGINEERING');
   await user.selectOptions(screen.getByLabelText('Land'), 'NL');
@@ -66,6 +66,10 @@ async function completeStep1(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Uren per week (minimum)'), '24');
   await user.clear(screen.getByLabelText('Uren per week (maximum)'));
   await user.type(screen.getByLabelText('Uren per week (maximum)'), '36');
+}
+
+async function completeStep1(user: ReturnType<typeof userEvent.setup>) {
+  await fillStep1Fields(user);
   await user.click(screen.getByRole('button', { name: 'Volgende' }));
   await waitFor(() => expect(vacancyApi.createVacancy).toHaveBeenCalledTimes(1));
 }
@@ -91,6 +95,72 @@ describe('VacancyCreatePage', () => {
 
     expect(vacancyApi.createVacancy).not.toHaveBeenCalled();
     expect(screen.getByRole('heading', { name: 'Basisgegevens' })).toBeInTheDocument();
+  });
+
+  it('locks step 2-4 in the Stepper before step 1 is completed via "Volgende"', () => {
+    renderPage();
+
+    expect(screen.getByRole('button', { name: /Vacaturetekst/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Contact en voorwaarden/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Overzicht/ })).toBeDisabled();
+  });
+
+  it('does not unlock step 2 in the Stepper when saving step 1 via "Bewaren als concept" instead of "Volgende"', async () => {
+    const user = userEvent.setup();
+    vi.mocked(vacancyApi.createVacancy).mockResolvedValue(createdVacancy);
+    renderPage();
+
+    await fillStep1Fields(user);
+    await user.click(screen.getByRole('button', { name: 'Bewaren als concept' }));
+    await waitFor(() => expect(vacancyApi.createVacancy).toHaveBeenCalledTimes(1));
+
+    expect(screen.getByRole('button', { name: /Vacaturetekst/ })).toBeDisabled();
+  });
+
+  it('does not unlock step 3 in the Stepper from picking a mode alone, only after "Volgende" on the write view', async () => {
+    const user = userEvent.setup();
+    vi.mocked(vacancyApi.createVacancy).mockResolvedValue(createdVacancy);
+    renderPage();
+
+    await completeStep1(user);
+    expect(await screen.findByRole('heading', { name: 'Vacaturetekst' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Zelf schrijven/ }));
+    expect(screen.getByRole('button', { name: /Contact en voorwaarden/ })).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+    expect(await screen.findByLabelText('Samenvatting')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Contact en voorwaarden/ })).toBeDisabled();
+  });
+
+  it('keeps previously reached steps clickable in the Stepper after navigating back', async () => {
+    const user = userEvent.setup();
+    vi.mocked(vacancyApi.createVacancy).mockResolvedValue(createdVacancy);
+    vi.mocked(descriptionApi.saveDescription).mockResolvedValue({ summary: 'Written by hand' });
+    vi.mocked(vacancyApi.patchVacancyContactOffer).mockResolvedValue({
+      ...createdVacancy,
+      contactPerson: { name: 'Jane Doe', email: 'jane@example.com' },
+    } as unknown as VacancyResponse);
+    renderPage();
+
+    await completeStep1(user);
+    await user.click(screen.getByRole('button', { name: /Zelf schrijven/ }));
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+    await user.type(screen.getByLabelText('Samenvatting'), 'Written by hand');
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+    await waitFor(() => expect(descriptionApi.saveDescription).toHaveBeenCalledTimes(1));
+    await user.type(screen.getByLabelText('Naam'), 'Jane Doe');
+    await user.type(screen.getByLabelText('E-mailadres'), 'jane@example.com');
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+    await waitFor(() => expect(vacancyApi.patchVacancyContactOffer).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole('heading', { name: 'Overzicht' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Basisgegevens' }));
+    expect(await screen.findByRole('heading', { name: 'Basisgegevens' })).toBeInTheDocument();
+
+    expect(screen.getByRole('button', { name: /Vacaturetekst/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Contact en voorwaarden/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Overzicht/ })).toBeEnabled();
   });
 
   it('shows a visible error (not a blank screen) when the backend is unreachable on step 1', async () => {

@@ -40,3 +40,23 @@ const unsorted: Country[] = [
 ];
 
 export const countries: Country[] = [...unsorted].sort((a, b) => a.labelNl.localeCompare(b.labelNl, 'nl'));
+
+/**
+ * `Select`-ready country list for `VacancyCoreForm`'s Land field: the PO's most-used
+ * countries first in a fixed (not alphabetical) order, then a visual separator, then the
+ * rest Dutch-alphabetically — see plan §12 item 2. `countries` above stays the flat,
+ * Dutch-sorted full list for code-to-label lookups (e.g. `VacancyPreview`).
+ */
+const preferredCountryCodes = ['NL', 'BE', 'FR', 'DE'];
+
+const preferredCountries = preferredCountryCodes.map(
+  (code) => countries.find((country) => country.code === code)!,
+);
+
+const remainingCountries = countries.filter((country) => !preferredCountryCodes.includes(country.code));
+
+export const countrySelectOptions: (Country | { type: 'separator' })[] = [
+  ...preferredCountries,
+  { type: 'separator' },
+  ...remainingCountries,
+];

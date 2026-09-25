@@ -714,12 +714,33 @@ unlock the next step; going back never re-locks reached steps. Make unreachable 
 items visually inert (`shared/ui/Stepper.module.css`). Tests first in
 `VacancyCreatePage.test.tsx`.
 
+**Done.** Added `maxReachedStep` state + `advanceTo(step)`, routed all four forward
+transitions (step 1 Volgende, step 2 write-view Volgende, 3-questions modal submit, step
+3 Volgende) through it; `Stepper`'s `isReachable` now `index + 1 <= maxReachedStep`.
+Backward navigation (Stepper clicks, Overzicht "Aanpassen", "Terug naar tekstkeuze")
+still uses plain `setCurrentStep` and never lowers `maxReachedStep`. Disabled Stepper
+items get `opacity: 0.6` (same convention as `Button.module.css`'s disabled state) on top
+of the existing `cursor: not-allowed`. 4 new tests in `VacancyCreatePage.test.tsx`
+(locked before step 1 Volgende; "Bewaren als concept" doesn't unlock step 2; picking a
+mode alone doesn't unlock step 3; reached steps stay clickable after going back).
+
 ## T045 — Land dropdown: NL, BE, FR, DE first, separator, then the rest alphabetically
 Plan: §12 item 2. `entities/location`: preferred order `['NL', 'BE', 'FR', 'DE']`, then
 the remaining countries Dutch-sorted; keep the full `countries` export for lookups.
 `shared/ui/Select`: generic separator support rendered as a disabled `<option>` of `─`
 characters, never selectable. Wire into `VacancyCoreForm`'s Land select. Tests first in
 `countries.test.ts` and `Select.test.tsx`.
+
+**Done.** `shared/ui/Select` gained a `SelectSeparator` type (`{ type: 'separator' }`) and
+`SelectItem = SelectOption | SelectSeparator`; separators render as a disabled `<option>`
+of 24 `─` characters, never carrying a `value`. `entities/location` gained
+`countrySelectOptions` (`Country | separator`, kept UI-agnostic — no `shared/ui` type
+import from the entity layer), built from the existing `countries` list (unchanged,
+still exported for lookups) with NL/BE/FR/DE pulled to the front in that fixed order,
+one separator, then the remaining 25 Dutch-sorted. Wired into `VacancyCoreForm`'s Land
+`Select` (mapped to `{value,label}`/separator at the call site, same pattern the form
+already used for the plain `countries` list). New tests: 4 in `countries.test.ts`, 2 in
+`Select.test.tsx`, 1 in `VacancyCoreForm.test.tsx` proving the rendered option order.
 
 ## T046 — Salarisperiode readable: two-column salary rows + consistent select sizing
 Plan: §12 item 3. `edit-vacancy-contact-offer`: replace the single `.salaryGrid` (with the
@@ -731,10 +752,26 @@ chevron and the Land ISO2 suffix, same height as text inputs. One RTL assertion 
 row grouping; real-browser screenshots at ~800px and ~1280px as proof. Depends on T045
 (both touch `Select`).
 
+**Done.** `VacancyContactOfferForm` now renders three `.contactGrid` rows (min|max,
+Valuta|Salarisperiode, vakantiedagen|periode — the third always visible) instead of the
+old spanning `.salaryGrid`/`.holidaysRow`; `.salaryGrid`/`.holidaysRow` CSS removed,
+`.contactGrid > * { min-width: 0 }` added. `shared/ui/Select`: `appearance: none` (scoped
+to `select.control` so plain inputs/textareas are unaffected) + Lucide `ChevronDown` in
+`.controlWrapper`; base padding-right reserves chevron space, `select.controlWithSuffix`
+reserves chevron+suffix space (suffix positioned left of the chevron). New RTL test
+confirms Valuta/Salarisperiode share a row, separate from Salaris minimum/maximum; new
+Select test confirms the chevron renders. Real-browser screenshots at 800px/1280px
+(`r2-step3-salary-800.png`/`r2-step3-salary-1280.png`) confirm "Kies een periode" renders
+in full and `Salaris minimum`/`Salarisperiode` both measure 60px tall (same height).
+
 ## T047 — Preview: remove the "Tekst aanpassen" button
 Plan: §12 item 4. `features/preview-vacancy/ui/VacancyPreview.tsx`: delete the unstyled
 button under the H1; the footer "Terug" stays. Update `VacancyPreview.test.tsx` (and the
 Playwright flow if it clicks it).
+
+**Done.** Removed the `<button>Tekst aanpassen</button>` under the H1; footer "Terug"
+(same `onBack`) is now the only way back. New test asserts it's gone. The Playwright
+spec never clicked this button, so no e2e change was needed.
 
 ## T048 — [review-gate] Final review: vacancy-creation (PO follow-up pass)
 Depends on T044, T045, T046, T047. Reviewer checks the full diff of this round against

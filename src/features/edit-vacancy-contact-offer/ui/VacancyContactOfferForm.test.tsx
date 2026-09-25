@@ -157,6 +157,19 @@ describe('VacancyContactOfferForm', () => {
     );
   });
 
+  it('groups Valuta and Salarisperiode into their own row, separate from Salaris minimum/maximum', () => {
+    render(<VacancyContactOfferForm vacancyId="vacancy-1" onSaved={vi.fn()} />);
+
+    const valuta = screen.getByLabelText('Valuta');
+    const salarisperiode = screen.getByLabelText('Salarisperiode');
+    const salarisMin = screen.getByLabelText('Salaris minimum');
+
+    const rowOf = (control: HTMLElement) => control.closest('div')?.parentElement?.parentElement;
+
+    expect(rowOf(valuta)).toBe(rowOf(salarisperiode));
+    expect(rowOf(valuta)).not.toBe(rowOf(salarisMin));
+  });
+
   it('keeps "Aantal vakantiedagen" visible and interactive when "Liever niet delen" is checked (regression)', async () => {
     const user = userEvent.setup();
     render(<VacancyContactOfferForm vacancyId="vacancy-1" onSaved={vi.fn()} />);

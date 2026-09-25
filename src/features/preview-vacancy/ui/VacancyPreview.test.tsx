@@ -73,6 +73,20 @@ describe('VacancyPreview', () => {
     expect(screen.getByText('Task list')).toBeInTheDocument();
   });
 
+  it('does not render the unstyled "Tekst aanpassen" button (removed — footer "Terug" is the way back)', () => {
+    render(
+      <VacancyPreview
+        vacancy={vacancy}
+        description={description}
+        onBack={vi.fn()}
+        onSaveDraft={vi.fn()}
+        onRequestPublish={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Tekst aanpassen' })).not.toBeInTheDocument();
+  });
+
   it('renders a disabled "Solliciteren" button', () => {
     render(
       <VacancyPreview

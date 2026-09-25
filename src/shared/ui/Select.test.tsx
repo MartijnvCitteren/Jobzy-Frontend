@@ -44,4 +44,42 @@ describe('Select', () => {
 
     expect(screen.queryByText('NL', { selector: 'span' })).not.toBeInTheDocument();
   });
+
+  it('renders a separator entry as a disabled, unselectable option', () => {
+    const optionsWithSeparator = [
+      { value: 'NL', label: 'Nederland' },
+      { type: 'separator' as const },
+      { value: 'BE', label: 'België' },
+    ];
+    render(<Select label="Land" options={optionsWithSeparator} value="NL" onChange={vi.fn()} />);
+
+    const select = screen.getByLabelText('Land');
+    const allOptions = Array.from(select.querySelectorAll('option'));
+    const separatorOption = allOptions.find((option) => /^─+$/.test(option.textContent ?? ''));
+
+    expect(separatorOption).toBeDefined();
+    expect(separatorOption).toBeDisabled();
+  });
+
+  it('never fires onChange with the separator as the selected value', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const optionsWithSeparator = [
+      { value: 'NL', label: 'Nederland' },
+      { type: 'separator' as const },
+      { value: 'BE', label: 'België' },
+    ];
+    render(<Select label="Land" options={optionsWithSeparator} value="NL" onChange={onChange} />);
+
+    await user.selectOptions(screen.getByLabelText('Land'), 'BE');
+
+    expect(onChange).toHaveBeenCalledWith('BE');
+    expect(onChange).not.toHaveBeenCalledWith(expect.stringMatching(/^─+$/));
+  });
+
+  it('renders a chevron icon (native select arrow replaced for consistent cross-browser sizing)', () => {
+    const { container } = render(<Select label="Land" options={options} value="NL" onChange={vi.fn()} />);
+
+    expect(container.querySelector('svg')).toBeInTheDocument();
+  });
 });

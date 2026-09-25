@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { ChevronDown } from 'lucide-react';
 import styles from './fields.module.css';
 
 export interface SelectOption {
@@ -6,9 +7,22 @@ export interface SelectOption {
   label: string;
 }
 
+/** A non-selectable divider between groups of options — never becomes the field's value. */
+export interface SelectSeparator {
+  type: 'separator';
+}
+
+export type SelectItem = SelectOption | SelectSeparator;
+
+const SEPARATOR_TEXT = '─'.repeat(24);
+
+function isSeparator(item: SelectItem): item is SelectSeparator {
+  return 'type' in item && item.type === 'separator';
+}
+
 export interface SelectProps {
   label: string;
-  options: SelectOption[];
+  options: SelectItem[];
   value: string;
   onChange: (value: string) => void;
   error?: string;
@@ -39,17 +53,24 @@ export function Select({ label, options, value, onChange, error, placeholder, di
               {placeholder}
             </option>
           )}
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
+          {options.map((option, index) =>
+            isSeparator(option) ? (
+              <option key={`separator-${index}`} disabled>
+                {SEPARATOR_TEXT}
+              </option>
+            ) : (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ),
+          )}
         </select>
         {suffix && (
           <span className={styles.suffix} aria-hidden="true">
             {suffix}
           </span>
         )}
+        <ChevronDown className={styles.chevron} size={16} aria-hidden="true" />
       </div>
       {error && <p className={styles.error}>{error}</p>}
     </div>

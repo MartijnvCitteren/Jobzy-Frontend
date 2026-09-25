@@ -7,7 +7,7 @@ import {
   type VacancyResponse,
   type WorkplaceType,
 } from '../../../entities/vacancy';
-import { countries } from '../../../entities/location';
+import { countrySelectOptions } from '../../../entities/location';
 import { toFieldErrors } from '../../../shared/lib/problem-details';
 import type { ApiError } from '../../../shared/api';
 import {
@@ -166,7 +166,9 @@ export function VacancyCoreForm({ vacancyId, initialValues, onSaved, onNext }: V
           label="Land"
           value={values.country}
           onChange={(value) => setField('country', value)}
-          options={countries.map((c) => ({ value: c.code, label: c.labelNl }))}
+          options={countrySelectOptions.map((item) =>
+            'code' in item ? { value: item.code, label: item.labelNl } : { type: 'separator' as const },
+          )}
           placeholder="Kies een land"
           error={fieldErrors.country}
           suffix={values.country || undefined}

@@ -4,28 +4,15 @@
   gap: var(--space-2);
 }
 
+.contactGrid > * {
+  min-width: 0;
+}
+
 .salaryHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.salaryGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--space-2);
-}
-
-.salaryGrid > * {
-  min-width: 0;
-}
-
-.holidaysRow {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: var(--space-2);
 }
 

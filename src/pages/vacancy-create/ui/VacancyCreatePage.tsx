@@ -28,6 +28,7 @@ type Step2View = 'choose' | 'write';
 export function VacancyCreatePage() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  const [maxReachedStep, setMaxReachedStep] = useState<1 | 2 | 3 | 4>(1);
   const [vacancy, setVacancy] = useState<VacancyResponse | null>(null);
   const [view, setView] = useState<View>('wizard');
   const [mode, setMode] = useState<VacancyTextMode | null>(null);
@@ -50,6 +51,12 @@ export function VacancyCreatePage() {
   function handleDescriptionSaved(description: VacancyDescriptionResponse) {
     setManualDraft(description);
     setVacancy((prev) => (prev ? { ...prev, description } : prev));
+  }
+
+  /** The one path every forward ("Volgende"-style) transition goes through, so a step can never become reachable except by actually completing the step before it. */
+  function advanceTo(step: 1 | 2 | 3 | 4) {
+    setCurrentStep(step);
+    setMaxReachedStep((prev) => (step > prev ? step : prev));
   }
 
   function handleModeChoiceNext() {
@@ -78,7 +85,7 @@ export function VacancyCreatePage() {
             steps={stepLabels}
             currentIndex={currentStep - 1}
             onStepClick={(index) => setCurrentStep((index + 1) as 1 | 2 | 3 | 4)}
-            isReachable={(index) => index <= 1 || mode !== null}
+            isReachable={(index) => index + 1 <= maxReachedStep}
           />
 
           {currentStep === 1 && (
@@ -98,7 +105,7 @@ export function VacancyCreatePage() {
                   : undefined
               }
               onSaved={handleCoreSaved}
-              onNext={() => setCurrentStep(2)}
+              onNext={() => advanceTo(2)}
             />
           )}
 
@@ -114,7 +121,7 @@ export function VacancyCreatePage() {
                     draft={description}
                     onSaved={(saved) => {
                       handleDescriptionSaved(saved);
-                      setCurrentStep(3);
+                      advanceTo(3);
                     }}
                   />
                 </>
@@ -126,7 +133,7 @@ export function VacancyCreatePage() {
                 onClose={() => setQuestionsOpen(false)}
                 onSubmit={(inputs) => {
                   generation.start(inputs);
-                  setCurrentStep(3);
+                  advanceTo(3);
                 }}
               />
             </>
@@ -141,7 +148,7 @@ export function VacancyCreatePage() {
               initialHolidayInput={holidayInput}
               onSaved={(updated) => {
                 setVacancy(updated);
-                setCurrentStep(4);
+                advanceTo(4);
               }}
               onHolidayInputChange={setHolidayInput}
             />

@@ -60,6 +60,17 @@ describe('VacancyCoreForm', () => {
     expect(screen.getByText('NL', { selector: 'span' })).toBeInTheDocument();
   });
 
+  it('lists NL, BE, FR, DE first on the Land select, then a separator, then the rest alphabetically', () => {
+    render(<VacancyCoreForm vacancyId={null} onSaved={vi.fn()} />);
+
+    const select = screen.getByLabelText('Land');
+    // First <option> is the "Kies een land" placeholder; country options start after it.
+    const optionLabels = Array.from(select.querySelectorAll('option')).map((option) => option.textContent);
+
+    expect(optionLabels.slice(1, 5)).toEqual(['Nederland', 'België', 'Frankrijk', 'Duitsland']);
+    expect(optionLabels[5]).toMatch(/^─+$/);
+  });
+
   it('shows required-field validation errors and does not submit when the form is empty', async () => {
     const user = userEvent.setup();
     const onSaved = vi.fn();

@@ -209,45 +209,45 @@ export function VacancyContactOfferForm({
           <Checkbox label="Liever niet delen" checked={hideSalary} onChange={setHideSalary} />
         </div>
 
-        <div className={styles.salaryGrid}>
-          {!hideSalary && (
-            <>
-              <NumberField label="Salaris minimum" value={values.salaryMin} onChange={(v) => setField('salaryMin', v)} />
-              <NumberField label="Salaris maximum" value={values.salaryMax} onChange={(v) => setField('salaryMax', v)} />
-              <Select
-                label="Salarisperiode"
-                value={values.salaryPeriod}
-                onChange={(v) => setField('salaryPeriod', v as SalaryPeriod)}
-                options={salaryPeriodOptions}
-                placeholder="Kies een periode"
-                error={fieldErrors.salaryPeriod}
-              />
-            </>
-          )}
-          <div className={styles.holidaysRow}>
-            <NumberField
-              label="Aantal vakantiedagen"
-              value={values.numberOfHolidays}
-              onChange={(v) => setField('numberOfHolidays', v)}
+        {!hideSalary && (
+          <div className={styles.contactGrid}>
+            <NumberField label="Salaris minimum" value={values.salaryMin} onChange={(v) => setField('salaryMin', v)} />
+            <NumberField label="Salaris maximum" value={values.salaryMax} onChange={(v) => setField('salaryMax', v)} />
+          </div>
+        )}
+        {!hideSalary && (
+          <div className={styles.contactGrid}>
+            <Select
+              label="Valuta"
+              value={values.currency}
+              onChange={(v) => setField('currency', v)}
+              options={currencyOptions}
+              placeholder="Kies een valuta"
+              error={fieldErrors.currency}
             />
             <Select
-              label="Periode vakantiedagen"
-              value={holidayPeriod}
-              onChange={(v) => setHolidayPeriod(v as HolidayPeriod)}
-              options={holidayPeriodOptions}
+              label="Salarisperiode"
+              value={values.salaryPeriod}
+              onChange={(v) => setField('salaryPeriod', v as SalaryPeriod)}
+              options={salaryPeriodOptions}
+              placeholder="Kies een periode"
+              error={fieldErrors.salaryPeriod}
             />
           </div>
-        </div>
-        {!hideSalary && (
-          <Select
-            label="Valuta"
-            value={values.currency}
-            onChange={(v) => setField('currency', v)}
-            options={currencyOptions}
-            placeholder="Kies een valuta"
-            error={fieldErrors.currency}
-          />
         )}
+        <div className={styles.contactGrid}>
+          <NumberField
+            label="Aantal vakantiedagen"
+            value={values.numberOfHolidays}
+            onChange={(v) => setField('numberOfHolidays', v)}
+          />
+          <Select
+            label="Periode vakantiedagen"
+            value={holidayPeriod}
+            onChange={(v) => setHolidayPeriod(v as HolidayPeriod)}
+            options={holidayPeriodOptions}
+          />
+        </div>
 
         <Button type="button" disabled={saving} onClick={save}>
           Volgende
