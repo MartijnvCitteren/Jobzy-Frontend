@@ -695,3 +695,5 @@ Re-verified: `tsc -b` clean, `eslint . && steiger ./src` clean, `vitest run` 179
 `vite build` clean, `playwright test` 1/1. Retook the Overzicht screenshot
 (`fix-step4-overzicht.png` in the scratchpad) showing the read-only state with an empty
 "Over de rol"/"Taken" placeholder and the grouped contact block.
+
+Reviewed-by: jobzy-frontend-reviewer — round-1 findings (holiday wording, empty-section placeholder, h3 section headings, grouped contact block, same-session holiday redisplay) verified fixed in 61ee419; tsc/eslint/steiger/vitest (179/179)/build/e2e re-run independently and clean. APPROVE.
