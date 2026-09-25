@@ -138,6 +138,7 @@ export function VacancyCreatePage() {
               mode={mode ?? undefined}
               phase={generation.phase}
               initialValues={{ contactPerson: vacancy.contactPerson, offer: vacancy.offer }}
+              initialHolidayInput={holidayInput}
               onSaved={(updated) => {
                 setVacancy(updated);
                 setCurrentStep(4);

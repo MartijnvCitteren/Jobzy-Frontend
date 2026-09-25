@@ -232,8 +232,44 @@ describe('VacancyCreatePage', () => {
     await waitFor(() => expect(vacancyApi.patchVacancyContactOffer).toHaveBeenCalledTimes(1));
 
     expect(await screen.findByRole('heading', { name: 'Overzicht' })).toBeInTheDocument();
-    expect(screen.getByText('5 dagen per week')).toBeInTheDocument();
-    expect(screen.queryByText('260 dagen per jaar')).not.toBeInTheDocument();
+    expect(screen.getByText('5 vakantiedagen per week')).toBeInTheDocument();
+    expect(screen.queryByText('260 vakantiedagen per jaar')).not.toBeInTheDocument();
+  });
+
+  it('redisplays the entered vakantiedagen amount/period (not the converted annual figure) when returning to step 3 from Overzicht', async () => {
+    const user = userEvent.setup();
+    vi.mocked(vacancyApi.createVacancy).mockResolvedValue(createdVacancy);
+    vi.mocked(descriptionApi.saveDescription).mockResolvedValue({ summary: 'Written by hand' });
+    vi.mocked(vacancyApi.patchVacancyContactOffer).mockResolvedValue({
+      ...createdVacancy,
+      contactPerson: { name: 'Jane Doe', email: 'jane@example.com' },
+      offer: { numberOfHolidays: 260 },
+    } as unknown as VacancyResponse);
+
+    renderPage();
+
+    await completeStep1(user);
+    expect(await screen.findByRole('heading', { name: 'Vacaturetekst' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Zelf schrijven/ }));
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+
+    expect(await screen.findByLabelText('Samenvatting')).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Samenvatting'), 'Written by hand');
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+    await waitFor(() => expect(descriptionApi.saveDescription).toHaveBeenCalledTimes(1));
+
+    await user.type(screen.getByLabelText('Naam'), 'Jane Doe');
+    await user.type(screen.getByLabelText('E-mailadres'), 'jane@example.com');
+    await user.type(screen.getByLabelText('Aantal vakantiedagen'), '5');
+    await user.selectOptions(screen.getByLabelText('Periode vakantiedagen'), 'WEEKLY');
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+    await waitFor(() => expect(vacancyApi.patchVacancyContactOffer).toHaveBeenCalledTimes(1));
+
+    expect(await screen.findByRole('heading', { name: 'Overzicht' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Aanpassen contact en voorwaarden' }));
+
+    expect(await screen.findByLabelText('Aantal vakantiedagen')).toHaveValue(5);
+    expect(screen.getByLabelText('Periode vakantiedagen')).toHaveValue('WEEKLY');
   });
 
   it('full click-through in AI mode: mode choice opens the 3-questions modal and gates step 3/4 on the shared generation phase', async () => {

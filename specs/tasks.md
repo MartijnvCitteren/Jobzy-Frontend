@@ -665,3 +665,33 @@ Salarisperiode; no duplicate section labels/stray divider artifact in Overzicht;
 coverage per plan §11.5; `tsc -b`, `eslint . && steiger ./src`, `vitest run`, `vite
 build`, `playwright test` all green. Do not mark this task complete except via the
 reviewer's `Reviewed-by: jobzy-frontend-reviewer` sign-off.
+
+**Review fixes (round 1, REQUEST_CHANGES on T034-T042).** All five findings addressed,
+test-first, on top of commit `6758ccf`:
+1. `formatHolidayDays` output changed from `"5 dagen per week"` to `"5 vakantiedagen per
+   week"` (`entities/vacancy/lib/holidays.ts` + `.test.ts`; assertions updated in
+   `ReviewVacancy.test.tsx`, `VacancyCreatePage.test.tsx`; example strings updated in
+   `.claude/adr/0005-holiday-period-input.md`; the e2e spec didn't assert this string, no
+   change needed there).
+2. Empty read-only Overzicht sections now render a `--text-secondary` "Nog niet
+   ingevuld" placeholder instead of an empty paragraph (`ReviewVacancy.tsx` +
+   `.module.css`, new test); the inline `style={{ whiteSpace: 'pre-wrap' }}` moved into
+   `.sectionValue` in the CSS module.
+3. Contact/salary/holiday lines wrapped in a new `.contactDetails` flex column
+   (`gap: var(--space-1)`) instead of being three Card-level siblings each getting the
+   Card's 24px gap; new structural test.
+4. Section labels ("Samenvatting"/"Over de rol"/"Taken") now render as real `<h3>`
+   elements — the app's global `h3` rule already matches the design's 15px/600
+   sub-heading spec exactly, so no new CSS was needed; new heading-role test.
+5. `VacancyContactOfferForm` gained an `initialHolidayInput` prop (seeds
+   `numberOfHolidays`/the period `Select` from the page's `holidayInput` state instead of
+   always reconstructing the converted annual figure at `ANNUAL`); `VacancyCreatePage`
+   now passes `initialHolidayInput={holidayInput}` into step 3's form. New component test
+   (prefill from `initialHolidayInput` vs. the ANNUAL fallback) and new page-level
+   round-trip test (fill 5/WEEKLY at step 3 → Overzicht → "Aanpassen contact en
+   voorwaarden" → step 3 shows 5/WEEKLY again, not 260/ANNUAL).
+
+Re-verified: `tsc -b` clean, `eslint . && steiger ./src` clean, `vitest run` 179/179,
+`vite build` clean, `playwright test` 1/1. Retook the Overzicht screenshot
+(`fix-step4-overzicht.png` in the scratchpad) showing the read-only state with an empty
+"Over de rol"/"Taken" placeholder and the grouped contact block.

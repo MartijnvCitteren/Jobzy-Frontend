@@ -37,5 +37,5 @@ export function fromAnnualHolidayDays(annual: number, period: HolidayPeriod): nu
 }
 
 export function formatHolidayDays(amount: number, period: HolidayPeriod): string {
-  return `${amount} dagen ${holidayPeriodSuffixes[period]}`;
+  return `${amount} vakantiedagen ${holidayPeriodSuffixes[period]}`;
 }

@@ -36,8 +36,8 @@ offer a period-aware input against a period-less API field.
 - The user's raw entered amount + chosen period are kept in page-local state
   (`VacancyCreatePage`'s `holidayInput`, plan §11.3), threaded into `review-vacancy` and
   `preview-vacancy` so Overzicht/Preview can redisplay what the user actually typed
-  ("5 dagen per week") rather than always showing the converted annual figure ("260
-  dagen per jaar") within the same session.
+  ("5 vakantiedagen per week") rather than always showing the converted annual figure
+  ("260 vakantiedagen per jaar") within the same session.
 - Raise an upstream `jobzy-contracts` request to add a `holidayPeriod` field to `Offer`
   (mirroring `SalaryPeriod`'s shape) — tracked in `specs/open-questions.md` #15, cross-
   team, not fixable from this repo alone.
@@ -66,7 +66,7 @@ offer a period-aware input against a period-less API field.
   the vacancy back from the API (out of scope today, no such flow exists), only the
   converted annual number is available — the period a user chose is not recoverable from
   the backend. The FE must fall back to displaying the raw annual figure
-  (`fromAnnualHolidayDays(numberOfHolidays, 'ANNUAL')`, i.e. "X dagen per jaar") in that
+  (`fromAnnualHolidayDays(numberOfHolidays, 'ANNUAL')`, i.e. "X vakantiedagen per jaar") in that
   case, not guess a period. This is the gap the upstream `holidayPeriod` field would
   close.
 - Week/month → annual conversion (×52, ×12) can produce non-integer results; the

@@ -147,7 +147,7 @@ export function ReviewVacancy({
     return (
       <div key={section}>
         <div className={styles.sectionHeader}>
-          <span>{label}</span>
+          <h3>{label}</h3>
           <div className={styles.sectionActions}>
             {mode === 'ai' && onRegenerate && (
               <button type="button" className={styles.regenerateButton} onClick={() => onRegenerate(section)}>
@@ -189,8 +189,10 @@ export function ReviewVacancy({
             onChange={setDraftValue}
             multiline={sectionMultiline[section]}
           />
+        ) : values[section] ? (
+          <p className={styles.sectionValue}>{values[section]}</p>
         ) : (
-          <p style={{ whiteSpace: 'pre-wrap' }}>{values[section]}</p>
+          <p className={styles.sectionPlaceholder}>Nog niet ingevuld</p>
         )}
       </div>
     );
@@ -262,9 +264,11 @@ export function ReviewVacancy({
             Aanpassen
           </button>
         </div>
-        <p className={styles.contactLine}>{contactLine}</p>
-        <p className={styles.salaryLine}>{formatSalary(vacancy.offer)}</p>
-        {holidaysLine && <p className={styles.holidaysLine}>{holidaysLine}</p>}
+        <div className={styles.contactDetails}>
+          <p className={styles.contactLine}>{contactLine}</p>
+          <p className={styles.salaryLine}>{formatSalary(vacancy.offer)}</p>
+          {holidaysLine && <p className={styles.holidaysLine}>{holidaysLine}</p>}
+        </div>
 
         <div className={styles.footer}>
           <Button

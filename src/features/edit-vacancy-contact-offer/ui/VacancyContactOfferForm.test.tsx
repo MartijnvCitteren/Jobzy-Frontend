@@ -207,6 +207,39 @@ describe('VacancyContactOfferForm', () => {
     expect(screen.getByLabelText('Salarisperiode')).toHaveValue('MONTHLY');
   });
 
+  it('prefills vakantiedagen from initialHolidayInput (amount + period) rather than the converted annual offer figure', () => {
+    render(
+      <VacancyContactOfferForm
+        vacancyId="vacancy-1"
+        onSaved={vi.fn()}
+        initialValues={{
+          contactPerson: { name: 'Jane Doe', email: 'jane@example.com' },
+          offer: { numberOfHolidays: 260 },
+        }}
+        initialHolidayInput={{ amount: 5, period: 'WEEKLY' }}
+      />,
+    );
+
+    expect(screen.getByLabelText('Aantal vakantiedagen')).toHaveValue(5);
+    expect(screen.getByLabelText('Periode vakantiedagen')).toHaveValue('WEEKLY');
+  });
+
+  it('falls back to the raw annual offer figure (period ANNUAL) when no initialHolidayInput is given', () => {
+    render(
+      <VacancyContactOfferForm
+        vacancyId="vacancy-1"
+        onSaved={vi.fn()}
+        initialValues={{
+          contactPerson: { name: 'Jane Doe', email: 'jane@example.com' },
+          offer: { numberOfHolidays: 20 },
+        }}
+      />,
+    );
+
+    expect(screen.getByLabelText('Aantal vakantiedagen')).toHaveValue(20);
+    expect(screen.getByLabelText('Periode vakantiedagen')).toHaveValue('ANNUAL');
+  });
+
   it('resaves the prefilled salary values unchanged when clicking Volgende again', async () => {
     const user = userEvent.setup();
     vi.mocked(vacancyApi.patchVacancyContactOffer).mockResolvedValue(vacancy);

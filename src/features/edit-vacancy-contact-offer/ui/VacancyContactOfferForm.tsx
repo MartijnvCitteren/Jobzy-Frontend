@@ -37,6 +37,13 @@ export interface VacancyContactOfferFormProps {
     contactPerson?: ContactPerson;
     offer?: Offer;
   };
+  /**
+   * The vakantiedagen amount/period the user actually entered earlier this session
+   * (ADR-0005, page-local `holidayInput` state), preferred over reconstructing from the
+   * converted annual `offer.numberOfHolidays` figure when redisplaying this form (e.g.
+   * navigating back to step 3 from Overzicht's "Aanpassen").
+   */
+  initialHolidayInput?: HolidayInput;
   /** Surfaces the raw entered vakantiedagen amount + period (ADR-0005) for §11.3's page-local `holidayInput` state. */
   onHolidayInputChange?: (input: HolidayInput | undefined) => void;
 }
@@ -53,7 +60,10 @@ interface FormValues {
   numberOfHolidays: number | '';
 }
 
-function toFormValues(initialValues: VacancyContactOfferFormProps['initialValues']): FormValues {
+function toFormValues(
+  initialValues: VacancyContactOfferFormProps['initialValues'],
+  initialHolidayInput: HolidayInput | undefined,
+): FormValues {
   const { contactPerson, offer } = initialValues ?? {};
   return {
     name: contactPerson?.name ?? '',
@@ -64,7 +74,7 @@ function toFormValues(initialValues: VacancyContactOfferFormProps['initialValues
     salaryMax: offer?.salaryMax ?? '',
     currency: offer?.currency ?? '',
     salaryPeriod: offer?.salaryPeriod ?? '',
-    numberOfHolidays: offer?.numberOfHolidays ?? '',
+    numberOfHolidays: initialHolidayInput?.amount ?? offer?.numberOfHolidays ?? '',
   };
 }
 
@@ -114,10 +124,11 @@ export function VacancyContactOfferForm({
   mode = 'manual',
   phase = 'generating',
   initialValues,
+  initialHolidayInput,
   onHolidayInputChange,
 }: VacancyContactOfferFormProps) {
-  const [values, setValues] = useState<FormValues>(() => toFormValues(initialValues));
-  const [holidayPeriod, setHolidayPeriod] = useState<HolidayPeriod>('ANNUAL');
+  const [values, setValues] = useState<FormValues>(() => toFormValues(initialValues, initialHolidayInput));
+  const [holidayPeriod, setHolidayPeriod] = useState<HolidayPeriod>(initialHolidayInput?.period ?? 'ANNUAL');
   const [hideSalary, setHideSalary] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [topLevelError, setTopLevelError] = useState<string | undefined>(undefined);

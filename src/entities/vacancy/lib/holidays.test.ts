@@ -37,14 +37,14 @@ describe('fromAnnualHolidayDays', () => {
 
 describe('formatHolidayDays', () => {
   it('formats an annual amount', () => {
-    expect(formatHolidayDays(20, 'ANNUAL')).toBe('20 dagen per jaar');
+    expect(formatHolidayDays(20, 'ANNUAL')).toBe('20 vakantiedagen per jaar');
   });
 
   it('formats a weekly amount', () => {
-    expect(formatHolidayDays(5, 'WEEKLY')).toBe('5 dagen per week');
+    expect(formatHolidayDays(5, 'WEEKLY')).toBe('5 vakantiedagen per week');
   });
 
   it('formats a monthly amount', () => {
-    expect(formatHolidayDays(2, 'MONTHLY')).toBe('2 dagen per maand');
+    expect(formatHolidayDays(2, 'MONTHLY')).toBe('2 vakantiedagen per maand');
   });
 });

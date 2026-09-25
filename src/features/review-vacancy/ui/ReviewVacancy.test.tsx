@@ -76,6 +76,22 @@ describe('ReviewVacancy', () => {
     expect(screen.getByText('€3.000 – €4.000 per maand')).toBeInTheDocument();
   });
 
+  it('shows a placeholder for a read-only section with no content instead of an empty paragraph', () => {
+    render(
+      <ReviewVacancy
+        vacancyId="vacancy-1"
+        vacancy={vacancy}
+        description={{ ...description, tasks: '' }}
+        mode="manual"
+        onDescriptionSaved={vi.fn()}
+        onNavigateToStep={vi.fn()}
+        onViewPreview={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Nog niet ingevuld')).toBeInTheDocument();
+  });
+
   it('includes weekly hours in the meta line', () => {
     render(
       <ReviewVacancy
@@ -152,6 +168,24 @@ describe('ReviewVacancy', () => {
 
     await user.click(screen.getByRole('button', { name: 'Aanpassen contact en voorwaarden' }));
     expect(onNavigateToStep).toHaveBeenCalledWith(3);
+  });
+
+  it('renders each section label as an h3 sub-heading, not plain text', () => {
+    render(
+      <ReviewVacancy
+        vacancyId="vacancy-1"
+        vacancy={vacancy}
+        description={description}
+        mode="manual"
+        onDescriptionSaved={vi.fn()}
+        onNavigateToStep={vi.fn()}
+        onViewPreview={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { level: 3, name: 'Samenvatting' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Over de rol' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Taken' })).toBeInTheDocument();
   });
 
   it('"Aanpassen Samenvatting" swaps only that section into an editable field, prefilled with the current value', async () => {
@@ -347,6 +381,30 @@ describe('ReviewVacancy', () => {
     expect(screen.getByText(/0612345678/)).toBeInTheDocument();
   });
 
+  it('groups the contact, salary and holiday lines into one block instead of three Card-level siblings', () => {
+    render(
+      <ReviewVacancy
+        vacancyId="vacancy-1"
+        vacancy={vacancy}
+        description={description}
+        mode="manual"
+        onDescriptionSaved={vi.fn()}
+        onNavigateToStep={vi.fn()}
+        onViewPreview={vi.fn()}
+      />,
+    );
+
+    const contactLine = screen.getByText(/Jane Doe/);
+    const salaryLine = screen.getByText('€3.000 – €4.000 per maand');
+    const holidaysLine = screen.getByText('20 vakantiedagen per jaar');
+
+    expect(contactLine.parentElement).toBe(salaryLine.parentElement);
+    expect(contactLine.parentElement).toBe(holidaysLine.parentElement);
+    // A dedicated wrapper (not the Card itself, which uses a 24px gap for all its
+    // direct children) groups these three lines at a tighter 8px gap.
+    expect(contactLine.parentElement?.className).toMatch(/contactDetails/);
+  });
+
   it('shows a holiday-days line reconstructed from the annual offer figure when no holidayInput is given', () => {
     render(
       <ReviewVacancy
@@ -360,7 +418,7 @@ describe('ReviewVacancy', () => {
       />,
     );
 
-    expect(screen.getByText('20 dagen per jaar')).toBeInTheDocument();
+    expect(screen.getByText('20 vakantiedagen per jaar')).toBeInTheDocument();
   });
 
   it('prefers the page-supplied holidayInput over the reconstructed annual figure', () => {
@@ -381,7 +439,7 @@ describe('ReviewVacancy', () => {
       />,
     );
 
-    expect(screen.getByText('5 dagen per week')).toBeInTheDocument();
-    expect(screen.queryByText('260 dagen per jaar')).not.toBeInTheDocument();
+    expect(screen.getByText('5 vakantiedagen per week')).toBeInTheDocument();
+    expect(screen.queryByText('260 vakantiedagen per jaar')).not.toBeInTheDocument();
   });
 });
