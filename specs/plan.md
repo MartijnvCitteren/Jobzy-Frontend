@@ -3,14 +3,18 @@
 Status: FINAL — ready for `jobzy-frontend-developer`. **Revised 2026-09-20** for
 design-parity with the real, high-fidelity handoff (see §10 below) — §1-9 are the
 original architecture pass and remain valid except where §10 explicitly supersedes them.
+**Further revised 2026-09-25** for a PO-reported fine-tuning pass on the shipped,
+design-parity build (see §11 below) — §1-10 remain valid except where §11 explicitly
+supersedes them.
 Source spec: `specs/spec.md` (GitHub issue #4). Design source: `specs/design-notes.md`
 (now VERIFIED, see its own status line — supersedes its own 2026-09-19 approximate
 capture).
 Contract: `specs/vacancy.yml` (OpenAPI 3.1.1, `jobzy-contracts` VacancyApi, copied as-of 2026-09-19).
-Task list: `specs/tasks.md` (Speckit-style task IDs T001-T033, this plan is their source of truth).
+Task list: `specs/tasks.md` (Speckit-style task IDs T001-T043, this plan is their source of truth).
 Companion ADRs: `.claude/adr/0001-runtime-config-mechanism.md`,
 `.claude/adr/0002-hours-per-week-edit-after-creation.md`,
-`.claude/adr/0003-design-token-adoption.md`, `.claude/adr/0004-dropdown-implementation.md`.
+`.claude/adr/0003-design-token-adoption.md`, `.claude/adr/0004-dropdown-implementation.md`,
+`.claude/adr/0005-holiday-period-input.md`.
 
 This file is also mirrored at `.claude/planning/vacancy-creation.md` for
 `jobzy-frontend-developer`'s workflow, which reads plans from that fixed path. If the two
@@ -236,9 +240,9 @@ src/
     ui/
       Modal.tsx                — NEW: generic modal (focus trap, Escape, scrim),
                                   used by both new modals (T020b)
-      Skeleton.tsx             — NEW: animated bar loading primitive (T020b)
-      Checkbox.tsx             — NEW: "Liever niet delen" (T020b)
-      ChoiceCard.tsx           — NEW: the two Step 2 mode cards' shared shell (T020b)
+      Skeleton.tsx              — NEW: animated bar loading primitive (T020b)
+      Checkbox.tsx              — NEW: "Liever niet delen" (T020b)
+      ChoiceCard.tsx            — NEW: the two Step 2 mode cards' shared shell (T020b)
 ```
 
 **FSD placement reasoning for the two new features:**
@@ -421,3 +425,237 @@ the user: no mobile (<640px) support required.
 See `specs/tasks.md` T020-T033 for the ordered, ID-tagged breakdown. T020-T032 are
 implementation tasks (all traceable to this section); T033 is the single trailing
 `[review-gate]` task depending on all of T001-T018 and T020-T032.
+
+---
+
+## 11. Fine-tuning pass (2026-09-25)
+
+Trigger: the PO (Martijn) browser-tested the shipped, design-parity build (open PR
+`MartijnvCitteren/Jobzy-Frontend#5`, `feature/4-redesign-vacancy-creation`) and reported
+5 issues. Root causes below are diagnosed against the actual current code, not
+guessed. This is a **polish pass** — no new screens, no new FSD slices; T034-T042 rework
+existing slices in place, T043 is this pass's own single review gate.
+
+### 11.1 Issues → root cause → fix, by FSD location
+
+1. **Card heading/description spacing** (step 1, and — for consistency — every other
+   card with an intro line). `shared/ui/Card` is `display:flex; flex-direction:column;
+   gap: var(--space-3)` (24px between *every* child, including a heading and its very
+   next paragraph), and `VacancyCoreForm`'s `<p>` inherits body-copy size. Fix: a new
+   `shared/ui/CardHeader` primitive (`title`, `description?`, `level?: 2 | 3`, default
+   `2`) that groups heading+description at `gap: var(--space-1)` (8px, not the card's
+   24px), description in `--text-secondary` at `--text-ui-size` (14px) — matching the
+   design tokens' own "helper/meta" scale. Adopted in `create-vacancy-core`
+   (Basisgegevens), `choose-vacancy-text-mode` (Vacaturetekst — choose view), and
+   `review-vacancy` (Overzicht, "Alles staat er…"); also adopted (heading only, bumped
+   `h3`→`h2`) in `edit-vacancy-description` once it becomes a standalone step-2 view
+   under item 2 below, since it's no longer a co-located sub-card next to another `h2`.
+   Exported from `shared/ui/index.ts`.
+
+2. **Vacaturetekst and Contact en voorwaarden must be separate pages (manual mode).**
+   Today `pages/vacancy-create/ui/VacancyCreatePage.tsx` (lines ~116-133) renders
+   `VacancyDescriptionEditor` **and** `VacancyContactOfferForm` stacked on step 3 when
+   `mode === 'manual'`. New: step 2 gets a page-local sub-view,
+   `step2View: 'choose' | 'write'` (only meaningful in manual mode). Choosing "Zelf
+   schrijven" and clicking "Volgende" sets `step2View: 'write'` and **stays on step 2**
+   (stepper label unchanged: "Vacaturetekst") instead of jumping to step 3. The write
+   view renders `edit-vacancy-description`'s editor alone, with a normal primary
+   **"Volgende"** button (not the current italic "Concept opslaan" — delete
+   `.saveDraftButton`'s `font-style: italic` from `VacancyDescriptionEditor.module.css`
+   and rename the label) that calls `saveDescription` and *then* advances to step 3.
+   Step 3 now renders **only** `edit-vacancy-contact-offer` in both modes (the AI-mode
+   branch already did this — the two `currentStep === 3` JSX branches on the page
+   collapse into one, `mode` still threaded through for the banner). Returning to step 2
+   via the Stepper shows whatever `step2View` was last left on — a small ghost "Terug
+   naar tekstkeuze" link on the write view resets it to `'choose'` so the user can switch
+   mode; nothing is ever trapped, and this needs no new state beyond the one enum.
+   `mode`/`step2View` stay page-local, no store (§5/§10.5 reasoning unchanged).
+
+   **Deliberate divergence from the design handoff**, recorded here per the PO's explicit
+   request rather than silently decided: `design-notes.md` "Step 3 — Contact en
+   voorwaarden: two real variants" specifies the manual variant as *one* card with
+   description textareas **plus** contact + salary blocks together. The PO tested the
+   build in a browser and explicitly asked for these as two separate pages instead — his
+   tested, in-product feedback supersedes the design mock here. Not an ADR (it's a
+   product-priority call about page composition, not an architecture trade-off with
+   competing technical consequences) — flagged so a future pass doesn't "fix" this back
+   to match `design-notes.md`.
+
+3. **Textareas resize wider than the card.** `shared/ui/fields.module.css`'s `.control`
+   has no `width`/`max-width`, and a `<textarea>` defaults to `resize: both`. Global fix
+   in `shared/ui` (not per-feature, since every multiline field shares this class):
+   `.control { width: 100%; max-width: 100%; }`, plus `textarea.control { resize:
+   vertical; }` to stop horizontal resize specifically.
+
+4. **Vakantiedagen** (`edit-vacancy-contact-offer/ui/VacancyContactOfferForm.tsx`):
+   a. The Salarisperiode `<select>` visually overflows its `repeat(auto-fit,
+      minmax(150px, 1fr))` grid cell and covers "Aantal vakantiedagen" next to it. Item
+      3's width fix removes the intrinsic-width overflow itself, but CSS Grid tracks
+      don't shrink a native `<select>`'s intrinsic min-width just because a sibling has
+      `width: 100%` — add `min-width: 0` to `.salaryGrid > *` as the actual fix for the
+      grid-track collapse, on top of item 3.
+   b. Real bug: `numberOfHolidays` is rendered inside the `{!hideSalary && …}` block
+      (line 176), so "Liever niet delen" hides holidays too, even though holidays aren't
+      salary. Fix: pull it out into its own always-visible row (`grid-column: 1 / -1`,
+      full width — also directly addresses 4a's crowding by giving it more room),
+      rendered regardless of `hideSalary`.
+   c. **New requirement**: a period selector (week/maand/jaar) for vakantiedagen.
+      Contract gap — `Offer.numberOfHolidays` is a bare `number | null`, "Full-time-
+      equivalent holiday days… never pre-computed/prorated server-side", no period
+      field. Resolved by **ADR-0005** (client-side conversion to annual FTE days before
+      the API call; upstream `jobzy-contracts` ask filed in `open-questions.md`).
+
+5. **Overzicht (step 4)**, `features/review-vacancy/ui/ReviewVacancy.tsx`:
+   a. Meta line (`{category} · {city} · {workplaceType}`) lacks weekly hours.
+      `VacancyPreview.tsx:41` already inlines equivalent-but-not-quite-right JSX
+      (`{min}–{max} uur per week`, always a range, never collapses when equal) — extract
+      one `entities/vacancy/lib/hours.ts` (`formatHoursPerWeek(min, max)`: `"40 uur per
+      week"` when `min === max`, else `"32–40 uur per week"`) and use it in both
+      `review-vacancy` and `preview-vacancy` instead of leaving two near-duplicate
+      formatters to drift (same reasoning `formatSalary` already followed).
+   b. Textareas are always editable (no read-only state), each section's label renders
+      twice (the section header *and* `TextField`'s own `label` prop both show the same
+      text), and a bare `<hr />` inside the flex-column `Card` renders as a stray "."
+      instead of a visible rule. Fix: sections render as read-only
+      `<p style="white-space: pre-wrap">` by default; each section's own "Aanpassen"
+      swaps *only that section* into an editable textarea with "Opslaan"/"Annuleren"
+      ("Opslaan" → `saveDescription` with the full current `values` object — same
+      whole-object PATCH the API already expects, no new endpoint; "Annuleren" → revert
+      that field to the last-saved value, close edit mode). "Bekijk je vacature" is
+      disabled while any section is mid-edit — simplest guard against silently losing an
+      open edit, no autosave-on-navigate needed. Add a `hideLabel?: boolean` option to
+      `shared/ui/TextField` (visually-hidden label, `sr-only`, keeps the accessible name)
+      so edit mode doesn't re-render a second visible label. Divider: replace `<hr />`
+      with an explicit `<div className={styles.divider} aria-hidden="true" />`
+      (`border-top: 1px solid var(--border-hairline); height: 0;`). "Opnieuw"/skeleton
+      behaviour for AI mode is unchanged.
+   c. The contact block only renders when `vacancy.contactPerson` is truthy, and there's
+      no holiday-days line next to the salary line. Root cause is **not** this
+      component — see §11.2. Fix here: always render the contact block
+      (name/role/phone/email) and a holiday-days line (via ADR-0005's formatter,
+      preferring the page-local `holidayInput` if present, else reconstructing from
+      `vacancy.offer.numberOfHolidays` as a plain annual figure) once §11.2 makes
+      `vacancy` reliably carry what was submitted.
+   d. "Bekijk je vacature" moves from a sibling of the `Card` into the `Card` itself, in
+      a right-aligned footer row (`justify-content: flex-end`).
+
+### 11.2 Page-level data-loss fix (root cause behind issue 5c)
+
+`ReviewVacancy` only ever renders what's on its `vacancy` prop, and
+`VacancyCreatePage` replaces its `vacancy` state **wholesale** with each PATCH response
+(the `onSaved` callbacks at `VacancyCreatePage.tsx:127,141`, and `handleCoreSaved`).
+`specs/vacancy.yml`'s `VacancyResponse` does **not** list `contactPerson`/`offer` as
+`required` — a response that omits a section the user just submitted is contract-legal,
+and nothing in the current code defends against it. This matches the PO's exact repro
+(contact person and salary both filled in, both missing at Overzicht).
+
+**Decision: the merge lives inside each form's own save handler**
+(`VacancyContactOfferForm.save`, `VacancyCoreForm.save`), not at the page level:
+- *Pragmatic (chosen)* — each `save()` already holds both the just-submitted payload and
+  the raw API response in scope; before calling `onSaved`, merge:
+  `{ ...response, contactPerson: response.contactPerson ?? submittedContactPerson, offer:
+  response.offer ?? submittedOffer }` in `VacancyContactOfferForm`, and the equivalent for
+  `minHoursPerWeek`/`maxHoursPerWeek` in `VacancyCoreForm`'s `patchVacancyCore` branch
+  (source: its own `values`, which mirror `initialValues` since hours are disabled/
+  read-only post-creation per ADR-0002). This keeps `onSaved(vacancy: VacancyResponse)`
+  a contract the page can keep trusting as "complete enough," instead of making the page
+  track submitted-vs-returned state per form. No cross-feature import is needed either
+  way (each form only reasons about its own submission), so this doesn't touch the
+  "features don't import each other" rule — not an ADR-level call, just recorded here.
+- *Strict variant (rejected for now)* — page-level merge, with a parallel "last-
+  submitted" shadow per section held on `VacancyCreatePage`. More correct in the
+  abstract (one place owns "what does the user think is saved"), but adds page state
+  surface for a defensive edge case two small feature-local patches already close.
+  Revisit if a third form needs the same treatment and duplicating the pattern a third
+  time starts to hurt.
+
+### 11.3 State additions
+
+`pages/vacancy-create/ui/VacancyCreatePage.tsx` gains:
+
+- `step2View: 'choose' | 'write'` (default `'choose'`) — §11.1 item 2.
+- `holidayInput: { amount: number; period: HolidayPeriod } | undefined` — set from
+  `edit-vacancy-contact-offer`'s save (via `onSaved` or a small dedicated
+  `onHolidayInputChange` prop, developer's call), threaded as a prop into
+  `review-vacancy` and `preview-vacancy` so both can display the period the user
+  actually chose, in-session (ADR-0005). Still page-local, single-session, never written
+  to browser storage — same reasoning as §10.5, just one more field of the same kind.
+
+### 11.4 API boundary
+
+No new endpoints and no contract change required to ship this pass. `numberOfHolidays`
+is still sent as a single annual-FTE number — the client converts week/month → annual
+before the existing `patchVacancyContactOffer` call (ADR-0005). The upstream
+`jobzy-contracts` ask (a `holidayPeriod` field on `Offer`, mirroring `SalaryPeriod`'s
+shape) is flagged in `specs/open-questions.md`, not blocking this pass.
+
+### 11.5 Test plan additions
+
+**Vitest + RTL** (failing-test-first for real logic; presentational-only bits noted
+explicitly rather than silently skipped, per the plan's existing convention):
+
+- `shared/ui/CardHeader` — renders `title` at the right heading level plus
+  `description`; omits the `<p>` when no `description` is passed.
+- `entities/vacancy/lib/hours.test.ts` — `formatHoursPerWeek`: collapse-when-equal case,
+  range case.
+- `entities/vacancy/lib/holidays.test.ts` — `toAnnualHolidayDays`/
+  `fromAnnualHolidayDays` per period (week ×52, month ×12, year ×1) and
+  `formatHolidayDays`'s output strings.
+- `edit-vacancy-contact-offer` — vakantiedagen renders and stays visible with "Liever
+  niet delen" checked (regression test for 4b); changing the period Select changes the
+  *converted* value in the outgoing `patchVacancyContactOffer` call body, not just
+  on-screen state; merge-on-response-omission case from §11.2 (mock a response missing
+  `contactPerson`/`offer`, assert `onSaved` still receives the submitted values).
+- `create-vacancy-core` — same merge case for `minHoursPerWeek`/`maxHoursPerWeek` on the
+  `patchVacancyCore` path.
+- `edit-vacancy-description` — save button renders "Volgende" (not "Concept opslaan"),
+  calls `saveDescription` then the page-supplied advance callback.
+- `review-vacancy` — read-only-by-default sections; "Aanpassen" → editable → "Opslaan"
+  calls `saveDescription`, "Annuleren" reverts without calling it; "Bekijk je vacature"
+  disabled while any section is mid-edit; contact block and holiday-days line render
+  unconditionally once `vacancy` carries them; "Bekijk je vacature" renders inside the
+  `Card`'s DOM subtree.
+- `pages/vacancy-create` — update the existing manual-mode click-through: step 2 choose
+  → write view → step 3 (contact-only, no description fields present) → step 4; one
+  assertion that returning to step 2 via the Stepper after a manual draft exists lands
+  on `'write'`, not `'choose'`.
+
+**Playwright** — extend `e2e/create-vacancy.spec.ts` (no new spec file): the manual path
+now fills Samenvatting and clicks "Volgende" on step 2's write view (landing on step 3
+with only contact fields, not "Concept opslaan" immediately followed by contact fields
+on the same page), and exercises one Overzicht "Aanpassen" → edit → "Opslaan" round-trip
+before "Bekijk je vacature". Still the one canonical flow this feature earns.
+
+### 11.6 PII
+
+No new PII surface introduced. `ContactPerson` remains the only PII-shaped data in this
+feature; §6's rules are unchanged (on-screen only, never logged, never persisted to
+browser storage, never sent to analytics). The behaviour change in 5c/§11.2 makes
+contact details render *unconditionally* once present, rather than conditionally on a
+truthiness check — this is a data-loss bug fix (previously-submitted data was being
+silently dropped, not legitimately absent), not a new exposure.
+
+### 11.7 Risks
+
+- **Per-section save-in-Overzicht is a real UX/complexity increase over "one save on
+  Volgende"** (5b) — low-to-medium severity: more surface for a user to leave a section
+  mid-edit. Mitigated by disabling "Bekijk je vacature" during an open edit rather than
+  risking silent loss; worth a human sanity-check at review that this reads as helpful
+  friction rather than an annoyance.
+- **Client-side annual-FTE conversion (ADR-0005) means the chosen input period doesn't
+  survive a backend round-trip** — low severity now (this is a session-only wizard, no
+  "resume an existing draft" flow in scope), but will become a real gap the moment such
+  a flow is built; the ADR names the upstream fix that closes it.
+- **Feature-local merge (§11.2) is a narrow, repeatable pattern, not a general
+  mechanism** — fine for two forms; if a third form develops the same "response may omit
+  what I just sent" shape, that's the signal to revisit the page-level alternative
+  instead of copying the pattern a third time.
+
+### 11.8 Task list
+
+See `specs/tasks.md` T034-T042 for the ordered, ID-tagged breakdown (all traceable to
+this section via `Plan: §11.x`); T043 is this pass's single trailing `[review-gate]`,
+depending on all of T034-T042. T001-T033 already carry T033's own sign-off and aren't
+re-reviewed here — the reviewer should still sanity-check that nothing in T034-T042
+regresses what T033 already approved (FSD boundaries, API-boundary discipline, PII
+handling, the shared-generation-hook single-instance discipline).

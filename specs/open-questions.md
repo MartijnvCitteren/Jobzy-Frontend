@@ -134,3 +134,23 @@ New questions raised by reading the real, high-fidelity handoff in full:
     the real files before shipping." Plan uses them as placeholders (T021) and flags
     the swap as a pre-ship follow-up. **Needs a human with access to the real brand
     asset files** before this ships externally.
+
+## 2026-09-25 — architect pass, fine-tuning (jobzy-frontend-architect)
+
+Full context: `specs/plan.md` §11, PO browser-test feedback on PR #5.
+
+15. **Contract gap: `Offer.numberOfHolidays` has no period field.** The PO wants to
+    enter vakantiedagen per week/maand/jaar, but `specs/vacancy.yml`'s `Offer` schema
+    only has a single `numberOfHolidays: number | null`, documented as "Full-time-
+    equivalent holiday days. Never pre-computed/prorated server-side" — no period
+    alongside it (unlike `Offer.salaryPeriod` for salary). Resolved pragmatically for
+    this pass per `.claude/adr/0005-holiday-period-input.md`: the UI offers a period
+    selector and converts to an annual FTE figure client-side before sending
+    `numberOfHolidays`; the chosen period + raw entered number are kept in page-local
+    state (not persisted) so Overzicht/Preview can redisplay what the user actually
+    entered within the same session. **Needs a human to raise this with the
+    backend/`jobzy-contracts` team**: add a `holidayPeriod` field to `Offer` (same shape
+    as `SalaryPeriod`, e.g. `WEEKLY | MONTHLY | ANNUAL`) so the chosen period survives a
+    backend round-trip — currently it does not (a page reload or a future "resume an
+    existing draft" flow would only ever see the converted annual number). Not blocking
+    this pass; blocking the moment reload/resume of an in-progress vacancy is in scope.

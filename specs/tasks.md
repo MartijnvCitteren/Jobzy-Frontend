@@ -438,3 +438,141 @@ with the avatar fully visible) and the full check suite (`tsc -b`, `eslint . && 
 ./src`, `vitest run` 138/138, `vite build`, `playwright test` 1/1) all still green.
 
 Reviewed-by: jobzy-frontend-reviewer — all 6 fixes verified against code (initialValues wiring, Select suffix, Card/AppShell CSS tokens, button-label split, formatSalary helper, Stepper done-state); tsc/eslint/steiger/vitest re-run independently and clean (138/138). APPROVE.
+
+---
+
+## Fine-tuning pass (2026-09-25) — plan §11
+
+Trigger: PO (Martijn) browser-tested the shipped build (PR #5) and reported 5 issues.
+T034-T042 are this pass's implementation tasks (all traceable to `specs/plan.md` §11);
+**T043 is the single trailing `[review-gate]`** for this pass, depending on all of
+T034-T042. T001-T033 stand as already reviewed/approved — not re-litigated here.
+
+## T034 — `shared/ui`: `CardHeader` primitive + field width/textarea-resize fix
+Plan: §11.1 items 1, 3. New `shared/ui/CardHeader.tsx` (+`.module.css`): `title`,
+`description?`, `level?: 2 | 3` (default `2`) props, heading+description grouped at
+`gap: var(--space-1)` (not the Card's own 24px), description in `--text-secondary` at
+`--text-ui-size`. Export from `shared/ui/index.ts`. Separately, fix
+`shared/ui/fields.module.css`: `.control { width: 100%; max-width: 100%; }` and
+`textarea.control { resize: vertical; }` so multiline fields can no longer be dragged
+wider than their card. Tests: `CardHeader` renders `title` at the right heading level,
+description renders/omits correctly; the field-width/resize fix is CSS-only — no new
+test, note this explicitly rather than silently skipping (existing `TextField`/
+`NumberField` tests must keep passing unchanged).
+
+## T035 — Adopt `CardHeader` in step 1 and step 2's choice view
+Plan: §11.1 item 1. Swap the raw `<h2>`+`<p>` in `create-vacancy-core/ui/VacancyCoreForm.tsx`
+("Basisgegevens") and `choose-vacancy-text-mode/ui/VacancyTextModeChoice.tsx`
+("Vacaturetekst") for `CardHeader`. No behavioural change — existing
+`getByRole('heading', { name: … })` queries in both components' tests must keep passing
+against `CardHeader`'s rendered output. Depends on T034.
+
+## T036 — Page flow split: step 2 manual "Vacaturetekst" write view, step 3 = Contact en voorwaarden only
+Plan: §11.1 item 2. `pages/vacancy-create/ui/VacancyCreatePage.tsx`: add `step2View:
+'choose' | 'write'` page state (default `'choose'`); manual mode's "Volgende" on the
+choice view sets `step2View: 'write'` instead of advancing `currentStep`; render
+`edit-vacancy-description`'s editor alone on step 2 when `mode === 'manual' && step2View
+=== 'write'`; collapse the two `currentStep === 3` branches into one (`edit-vacancy-
+contact-offer` only, `mode`/`phase` still threaded for the AI banner). In
+`edit-vacancy-description/ui/VacancyDescriptionEditor.tsx`: rename the save button to
+"Volgende" (drop the `.saveDraftButton { font-style: italic }` rule entirely), its
+`onSaved` now also advances to step 3 (page wires this), bump the card heading to
+`CardHeader`/`h2` (was `h3`) since it's now a standalone step card. Add a small ghost
+"Terug naar tekstkeuze" link/button on the write view that sets `step2View` back to
+`'choose'` (does not touch `mode`) — the only way back to the mode-choice cards; returning
+to step 2 via the Stepper otherwise shows whatever `step2View` was last left on (no
+reset). Tests: `edit-vacancy-description` button label + `onSaved` call;
+`pages/vacancy-create`'s manual-mode click-through updated for the new step 2→2→3 shape;
+one assertion that Stepper-click-back-to-step-2 with an existing manual draft lands on
+`'write'`, not `'choose'`. Depends on T034 (uses `CardHeader`).
+
+## T037 — Vakantiedagen visibility fix (own row, not hidden by "Liever niet delen", no grid overflow)
+Plan: §11.1 items 4a, 4b. `edit-vacancy-contact-offer/ui/VacancyContactOfferForm.tsx` +
+`.module.css`: move `numberOfHolidays`'s `NumberField` out of the `{!hideSalary && …}`
+block into its own always-visible, full-width grid row (`grid-column: 1 / -1`); add
+`min-width: 0` to `.salaryGrid > *` so the Salarisperiode `<select>` can no longer force
+the grid track wider than its cell (on top of T034's `width: 100%` fix, which alone
+isn't sufficient for grid tracks containing a native `<select>`). Tests: vakantiedagen
+renders and stays visible/interactive when "Liever niet delen" is checked (regression
+test directly against the reported bug). Depends on T034.
+
+## T038 — Holiday period selector + conversion/format helper — ADR-0005
+Plan: §11.1 item 4c, §11.4, `.claude/adr/0005-holiday-period-input.md`. New
+`entities/vacancy/lib/holidays.ts` (+`.test.ts`): `HolidayPeriod = 'WEEKLY' | 'MONTHLY' |
+'ANNUAL'`, `holidayPeriodOptions`/`holidayPeriodLabels` (Dutch, same pattern as
+`salaryPeriodLabels`), `toAnnualHolidayDays(amount, period)` (×52 / ×12 / ×1),
+`fromAnnualHolidayDays(annual, period)` (inverse, for redisplay fallback),
+`formatHolidayDays(amount, period)` → e.g. `"20 dagen per jaar"`. Export from
+`entities/vacancy/index.ts`. Wire a period `Select` next to vakantiedagen in
+`VacancyContactOfferForm`; on save, convert the entered amount+period to an annual
+number via `toAnnualHolidayDays` before it goes into the `patchVacancyContactOffer`
+call's `numberOfHolidays`; keep the raw `{ amount, period }` in local state and surface
+it to the page (`onSaved`/a small `onHolidayInputChange` prop — implementer's call) for
+§11.3's `holidayInput` page state. Tests: conversion round-trips per period, format
+strings, and that the outgoing PATCH body's `numberOfHolidays` reflects the converted
+(not raw) value for a non-ANNUAL period. Depends on T037.
+
+## T039 — Shared hours-per-week formatter
+Plan: §11.1 item 5a. New `entities/vacancy/lib/hours.ts` (+`.test.ts`):
+`formatHoursPerWeek(min, max)` → `"40 uur per week"` when `min === max`, else `"32–40
+uur per week"`. Export from `entities/vacancy/index.ts`. Replace `VacancyPreview.tsx`'s
+inline `{min}–{max} uur per week` JSX with this helper, and add it to
+`ReviewVacancy`'s meta line (`{category} · {city} · {workplaceType} · {hours}`). Tests:
+the two formatter cases; `VacancyPreview`/`ReviewVacancy` snapshot/text assertions
+updated for the shared output.
+
+## T040 — Overzicht (step 4) rework: read-only sections + per-section edit, dedupe labels, real divider, always-visible contact/holidays, button-in-card
+Plan: §11.1 items 5b, 5c, 5d. `features/review-vacancy/ui/ReviewVacancy.tsx` +
+`.module.css`: sections render as read-only `<p style="white-space: pre-wrap">` by
+default; each section's "Aanpassen" swaps *only that section* into an editable
+`TextField` (pass the new `hideLabel` prop — add it to `shared/ui/TextField.tsx` +
+`fields.module.css`, `sr-only` visually-hidden label — so the section header remains the
+only *visible* label) with "Opslaan" (calls `saveDescription` with the full current
+`values`, same whole-object PATCH as today) / "Annuleren" (reverts that field, no API
+call) actions; "Bekijk je vacature" is `disabled` while any section is mid-edit. Replace
+`<hr />` with `<div className={styles.divider} aria-hidden="true" />` (`border-top: 1px
+solid var(--border-hairline); height: 0;`). Always render the contact block
+(name/role/phone/email) and a holiday-days line (T038's `formatHolidayDays`, preferring
+the page-supplied `holidayInput` prop, falling back to `fromAnnualHolidayDays(offer
+.numberOfHolidays, 'ANNUAL')` reconstruction) instead of gating on
+`vacancy.contactPerson` truthiness. Move "Bekijk je vacature" inside the `Card`, in a
+right-aligned footer row. Adopt `CardHeader` for the "Overzicht" heading (T034). Tests
+per plan §11.5. Depends on T034, T038, T039, T041 (needs a `vacancy` that reliably
+carries submitted contact/offer/hours to have anything meaningful to always-render).
+
+## T041 — Page-level merge: preserve submitted contact/offer/hours when the PATCH response omits them
+Plan: §11.2. `edit-vacancy-contact-offer/ui/VacancyContactOfferForm.tsx`'s `save()`:
+before calling `onSaved`, merge `{ ...response, contactPerson: response.contactPerson ??
+submittedContactPerson, offer: response.offer ?? submittedOffer }`.
+`create-vacancy-core/ui/VacancyCoreForm.tsx`'s `save()` (the `patchVacancyCore` branch
+only — `createVacancy` already has hours in its own request/response): same merge for
+`minHoursPerWeek`/`maxHoursPerWeek`, sourced from `values` (which mirror `initialValues`
+since hours are disabled post-creation per ADR-0002). No page-level change, no
+cross-feature import — each form merges its own submission against its own response.
+Tests: mock a `patchVacancyContactOffer`/`patchVacancyCore` response missing the
+relevant section(s), assert `onSaved` still receives the submitted values.
+
+## T042 — Playwright: update `create-vacancy` for the step 2/3 split + one Overzicht edit round-trip
+Plan: §11.1 item 2, §11.5. Update `e2e/create-vacancy.spec.ts` (same file, not a new
+one): after "Zelf schrijven" + "Volgende", fill Samenvatting and click "Volgende" (not
+"Concept opslaan") on step 2's write view, landing on step 3 with only contact/salary
+fields present; add one Overzicht "Aanpassen" → edit a section → "Opslaan" round-trip
+before "Bekijk je vacature". Still the one canonical flow this feature earns — no second
+spec file. Depends on T036, T038, T040.
+
+## T043 — [review-gate] Final review: vacancy-creation (fine-tuning pass)
+Depends on: T034, T035, T036, T037, T038, T039, T040, T041, T042.
+Single end-of-pass review checkpoint for this fine-tuning pass specifically (T001-T033
+already carry T033's sign-off and are not re-reviewed here — but the reviewer should
+sanity-check T034-T042 doesn't regress anything T033 already approved: FSD boundaries/
+Steiger, API-boundary discipline, PII handling, the shared-generation-hook
+single-instance discipline). `jobzy-frontend-reviewer` runs against the full diff since
+T033, checking: the manual-mode step 2/3 split (plan §11.1 item 2) and its documented,
+deliberate divergence from `design-notes.md`'s merged Step-3 variant; the §11.2
+feature-local merge actually closes the PO's exact repro (contact+salary surviving to
+Overzicht); ADR-0005's client-side holiday-period conversion implemented as written;
+vakantiedagen visible with "Liever niet delen" checked and not visually overlapped by
+Salarisperiode; no duplicate section labels/stray divider artifact in Overzicht; test
+coverage per plan §11.5; `tsc -b`, `eslint . && steiger ./src`, `vitest run`, `vite
+build`, `playwright test` all green. Do not mark this task complete except via the
+reviewer's `Reviewed-by: jobzy-frontend-reviewer` sign-off.
