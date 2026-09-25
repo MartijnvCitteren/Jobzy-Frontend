@@ -19,8 +19,10 @@ function countryLabel(code: string): string {
 export function VacancyPreview({ vacancy, description, onBack, onSaveDraft, onRequestPublish }: VacancyPreviewProps) {
   return (
     <div>
-      <p>Stap 4 van 4 · voorvertoning</p>
-      <h1>Zo ziet een sollicitant je vacature</h1>
+      <div className={styles.pageHeader}>
+        <p className={styles.breadcrumb}>Stap 4 van 4 · voorvertoning</p>
+        <h1>Zo ziet een sollicitant je vacature</h1>
+      </div>
 
       <Card className={styles.card}>
         <div className={styles.header}>

@@ -777,3 +777,19 @@ spec never clicked this button, so no e2e change was needed.
 Depends on T044, T045, T046, T047. Reviewer checks the full diff of this round against
 §12, including a Dutch-copy read of any new user-visible strings (team-learnings), and
 that nothing regresses T043.
+
+**Review fixes (round 1, REQUEST_CHANGES on T044-T047).** Both findings addressed, on
+top of commit `85bc4f6`:
+1. **Required** — `VacancyPreview.tsx`/`.module.css`: the breadcrumb + H1 are now
+   wrapped in a `.pageHeader` (`display: flex; flex-direction: column; gap:
+   var(--space-1); margin-bottom: var(--space-3)`) so removing "Tekst aanpassen" no
+   longer leaves the H1 flush against the card. Measured H1-bottom → card-top gap: 24px
+   (matches `--space-3`).
+2. **Nitpick** — added a `.breadcrumb` class (`font-size: var(--text-caption-size);
+   color: var(--text-secondary)`) to the "Stap 4 van 4 · voorvertoning" `<p>`, matching
+   design-notes' 13px/secondary breadcrumb spec (measured computed style: 13px,
+   `oklch(0.45 0.01 90)` = `--ink-secondary`).
+
+Pure CSS/markup change; no new test (existing `VacancyPreview.test.tsx` — 6 tests — stay
+green, confirming no regression). Re-verified: `tsc -b` clean, `eslint . && steiger ./src`
+clean, `vitest run` 193/193. Screenshot: `r2-preview-header-fixed.png` in the scratchpad.
