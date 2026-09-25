@@ -793,3 +793,5 @@ top of commit `85bc4f6`:
 Pure CSS/markup change; no new test (existing `VacancyPreview.test.tsx` — 6 tests — stay
 green, confirming no regression). Re-verified: `tsc -b` clean, `eslint . && steiger ./src`
 clean, `vitest run` 193/193. Screenshot: `r2-preview-header-fixed.png` in the scratchpad.
+
+Reviewed-by: jobzy-frontend-reviewer — T044-T047 verified in a real browser (step gating, Land order + separator, 60px select/input parity at 800/1280px, preview button removed); round-1 fix (preview header 24px gap, 13px secondary breadcrumb) verified in 1548116; tsc/eslint/steiger/vitest (193/193)/build/e2e clean. APPROVE.
