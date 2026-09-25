@@ -1,0 +1,98 @@
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.meta {
+  font-size: var(--text-caption-size);
+  color: var(--text-secondary);
+}
+
+.linkButton {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-link);
+  font: inherit;
+  font-size: var(--text-caption-size);
+  font-weight: 600;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sectionValue {
+  white-space: pre-wrap;
+}
+
+.sectionPlaceholder {
+  color: var(--text-secondary);
+}
+
+.sectionActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--border-hairline);
+  height: 0;
+  margin: var(--space-2) 0;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-2);
+}
+
+.regenerateButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  color: var(--accent-advice);
+}
+
+.skeletons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.contactDetails {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.contactLine {
+  font-family: var(--font-mono);
+}
+
+.salaryLine {
+  font-family: var(--font-mono);
+}
+
+.holidaysLine {
+  font-family: var(--font-mono);
+}

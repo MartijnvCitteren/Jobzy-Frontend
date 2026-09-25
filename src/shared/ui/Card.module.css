@@ -1,0 +1,15 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-card);
+  padding: 28px;
+}
+
+.advice {
+  background: var(--surface-advice);
+  border-color: var(--accent-advice);
+  color: var(--text-primary);
+}
