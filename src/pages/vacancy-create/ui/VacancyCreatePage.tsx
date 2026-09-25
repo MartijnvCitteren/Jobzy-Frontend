@@ -6,11 +6,11 @@ import { VacancyCoreForm } from '../../../features/create-vacancy-core';
 import { VacancyTextModeChoice, type VacancyTextMode } from '../../../features/choose-vacancy-text-mode';
 import { ThreeQuestionsModal, useGenerateVacancyDescription } from '../../../features/generate-vacancy-description';
 import { VacancyDescriptionEditor } from '../../../features/edit-vacancy-description';
-import { VacancyContactOfferForm } from '../../../features/edit-vacancy-contact-offer';
+import { VacancyContactOfferForm, type HolidayInput } from '../../../features/edit-vacancy-contact-offer';
 import { ReviewVacancy } from '../../../features/review-vacancy';
 import { VacancyPreview } from '../../../features/preview-vacancy';
 import { PublishConfirmModal, PublishedConfirmation } from '../../../features/publish-vacancy';
-import { Stepper } from '../../../shared/ui';
+import { Button, Stepper } from '../../../shared/ui';
 import type { VacancyDescriptionResponse } from '../../../entities/vacancy-description';
 import type { VacancyResponse } from '../../../entities/vacancy';
 import styles from './VacancyCreatePage.module.css';
@@ -23,6 +23,7 @@ const stepLabels = [
 ];
 
 type View = 'wizard' | 'preview' | 'published';
+type Step2View = 'choose' | 'write';
 
 export function VacancyCreatePage() {
   const navigate = useNavigate();
@@ -30,11 +31,13 @@ export function VacancyCreatePage() {
   const [vacancy, setVacancy] = useState<VacancyResponse | null>(null);
   const [view, setView] = useState<View>('wizard');
   const [mode, setMode] = useState<VacancyTextMode | null>(null);
+  const [step2View, setStep2View] = useState<Step2View>('choose');
   const [questionsOpen, setQuestionsOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [hasSaved, setHasSaved] = useState(false);
   const [savedAt, setSavedAt] = useState<string | undefined>(undefined);
   const [manualDraft, setManualDraft] = useState<VacancyDescriptionResponse | undefined>(undefined);
+  const [holidayInput, setHolidayInput] = useState<HolidayInput | undefined>(undefined);
 
   const generation = useGenerateVacancyDescription(vacancy?.id ?? '');
 
@@ -53,7 +56,7 @@ export function VacancyCreatePage() {
     if (mode === 'ai') {
       setQuestionsOpen(true);
     } else {
-      setCurrentStep(3);
+      setStep2View('write');
     }
   }
 
@@ -101,7 +104,23 @@ export function VacancyCreatePage() {
 
           {currentStep === 2 && vacancy && (
             <>
-              <VacancyTextModeChoice mode={mode} onModeChange={setMode} onNext={handleModeChoiceNext} />
+              {mode === 'manual' && step2View === 'write' ? (
+                <>
+                  <Button type="button" variant="text" onClick={() => setStep2View('choose')}>
+                    Terug naar tekstkeuze
+                  </Button>
+                  <VacancyDescriptionEditor
+                    vacancyId={vacancy.id}
+                    draft={description}
+                    onSaved={(saved) => {
+                      handleDescriptionSaved(saved);
+                      setCurrentStep(3);
+                    }}
+                  />
+                </>
+              ) : (
+                <VacancyTextModeChoice mode={mode} onModeChange={setMode} onNext={handleModeChoiceNext} />
+              )}
               <ThreeQuestionsModal
                 open={questionsOpen}
                 onClose={() => setQuestionsOpen(false)}
@@ -113,35 +132,17 @@ export function VacancyCreatePage() {
             </>
           )}
 
-          {currentStep === 3 && vacancy && mode === 'manual' && (
-            <>
-              <VacancyDescriptionEditor
-                vacancyId={vacancy.id}
-                draft={description}
-                onSaved={handleDescriptionSaved}
-              />
-              <VacancyContactOfferForm
-                vacancyId={vacancy.id}
-                mode="manual"
-                initialValues={{ contactPerson: vacancy.contactPerson, offer: vacancy.offer }}
-                onSaved={(updated) => {
-                  setVacancy(updated);
-                  setCurrentStep(4);
-                }}
-              />
-            </>
-          )}
-
-          {currentStep === 3 && vacancy && mode === 'ai' && (
+          {currentStep === 3 && vacancy && (
             <VacancyContactOfferForm
               vacancyId={vacancy.id}
-              mode="ai"
+              mode={mode ?? undefined}
               phase={generation.phase}
               initialValues={{ contactPerson: vacancy.contactPerson, offer: vacancy.offer }}
               onSaved={(updated) => {
                 setVacancy(updated);
                 setCurrentStep(4);
               }}
+              onHolidayInputChange={setHolidayInput}
             />
           )}
 
@@ -152,6 +153,7 @@ export function VacancyCreatePage() {
               description={description}
               mode={mode}
               phase={generation.phase}
+              holidayInput={holidayInput}
               onDescriptionSaved={handleDescriptionSaved}
               onRegenerate={mode === 'ai' ? generation.regenerate : undefined}
               onNavigateToStep={(step) => setCurrentStep(step as 1 | 2 | 3 | 4)}

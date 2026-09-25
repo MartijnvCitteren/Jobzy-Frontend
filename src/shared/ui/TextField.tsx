@@ -13,6 +13,8 @@ export interface TextFieldProps {
   helperText?: string;
   /** Bolds this field's label — scoped opt-in for callers like the 3-questions modal (design README's "weight 600" spec), not a global label-weight change. */
   boldLabel?: boolean;
+  /** Visually hides the label (sr-only) while keeping it as the accessible name — for callers like review-vacancy's per-section edit mode, where a visible section header already serves as the label. */
+  hideLabel?: boolean;
 }
 
 export function TextField({
@@ -26,10 +28,13 @@ export function TextField({
   disabled,
   helperText,
   boldLabel,
+  hideLabel,
 }: TextFieldProps) {
   const id = useId();
   const Element = multiline ? 'textarea' : 'input';
-  const labelClassName = boldLabel ? `${styles.label} ${styles.labelBold}` : styles.label;
+  const labelClassName = [styles.label, boldLabel && styles.labelBold, hideLabel && styles.srOnly]
+    .filter(Boolean)
+    .join(' ');
   return (
     <div className={styles.field}>
       <label htmlFor={id} className={labelClassName}>

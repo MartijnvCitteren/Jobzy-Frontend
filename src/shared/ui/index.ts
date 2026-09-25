@@ -2,6 +2,8 @@ export { Button } from './Button';
 export type { ButtonProps } from './Button';
 export { Card } from './Card';
 export type { CardProps } from './Card';
+export { CardHeader } from './CardHeader';
+export type { CardHeaderProps } from './CardHeader';
 export { TextField } from './TextField';
 export type { TextFieldProps } from './TextField';
 export { NumberField } from './NumberField';

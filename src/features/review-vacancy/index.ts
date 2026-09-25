@@ -3,4 +3,5 @@ export type {
   ReviewVacancyProps,
   ReviewVacancyGenerationPhase,
   ReviewVacancyRegeneratableSection,
+  ReviewVacancyHolidayInput,
 } from './ui/ReviewVacancy';

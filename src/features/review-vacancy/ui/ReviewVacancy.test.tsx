@@ -29,8 +29,8 @@ const vacancy: VacancyResponse = {
   minHoursPerWeek: 24,
   maxHoursPerWeek: 36,
   createdAt: '2026-09-19T00:00:00Z',
-  contactPerson: { name: 'Jane Doe', role: 'HR', email: 'jane@example.com' },
-  offer: { salaryMin: 3000, salaryMax: 4000, currency: 'EUR', salaryPeriod: 'MONTHLY' },
+  contactPerson: { name: 'Jane Doe', role: 'HR', phone: '0612345678', email: 'jane@example.com' },
+  offer: { salaryMin: 3000, salaryMax: 4000, currency: 'EUR', salaryPeriod: 'MONTHLY', numberOfHolidays: 20 },
 } as unknown as VacancyResponse;
 
 const description = { summary: 'A great job summary', jobDescription: 'Role text', tasks: 'Task list' };
@@ -57,7 +57,7 @@ describe('ReviewVacancy', () => {
     expect(screen.queryByLabelText('Samenvatting')).not.toBeInTheDocument();
   });
 
-  it('renders editable textareas and the assembled summary once ready', () => {
+  it('renders sections as read-only text by default', () => {
     render(
       <ReviewVacancy
         vacancyId="vacancy-1"
@@ -70,9 +70,26 @@ describe('ReviewVacancy', () => {
       />,
     );
 
-    expect(screen.getByLabelText('Samenvatting')).toHaveValue('A great job summary');
+    expect(screen.getByText('A great job summary')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Samenvatting')).not.toBeInTheDocument();
     expect(screen.getByText(/Jane Doe/)).toBeInTheDocument();
     expect(screen.getByText('€3.000 – €4.000 per maand')).toBeInTheDocument();
+  });
+
+  it('includes weekly hours in the meta line', () => {
+    render(
+      <ReviewVacancy
+        vacancyId="vacancy-1"
+        vacancy={vacancy}
+        description={description}
+        mode="manual"
+        onDescriptionSaved={vi.fn()}
+        onNavigateToStep={vi.fn()}
+        onViewPreview={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/24–36 uur per week/)).toBeInTheDocument();
   });
 
   it('does not show "Opnieuw" regenerate controls in manual mode', () => {
@@ -115,7 +132,7 @@ describe('ReviewVacancy', () => {
     expect(onRegenerate).toHaveBeenCalledWith('summary');
   });
 
-  it('"Aanpassen" links call onNavigateToStep with step 1 and step 3', async () => {
+  it('"Aanpassen basisgegevens" and "Aanpassen contact en voorwaarden" call onNavigateToStep with step 1 and step 3', async () => {
     const user = userEvent.setup();
     const onNavigateToStep = vi.fn();
     render(
@@ -130,17 +147,38 @@ describe('ReviewVacancy', () => {
       />,
     );
 
-    const links = screen.getAllByRole('button', { name: 'Aanpassen' });
-    await user.click(links[0]);
+    await user.click(screen.getByRole('button', { name: 'Aanpassen basisgegevens' }));
     expect(onNavigateToStep).toHaveBeenCalledWith(1);
 
-    await user.click(links[1]);
+    await user.click(screen.getByRole('button', { name: 'Aanpassen contact en voorwaarden' }));
     expect(onNavigateToStep).toHaveBeenCalledWith(3);
   });
 
-  it('saves edited description via saveDescription', async () => {
+  it('"Aanpassen Samenvatting" swaps only that section into an editable field, prefilled with the current value', async () => {
     const user = userEvent.setup();
-    vi.mocked(descriptionApi.saveDescription).mockResolvedValue({ ...description, summary: 'Updated' });
+    render(
+      <ReviewVacancy
+        vacancyId="vacancy-1"
+        vacancy={vacancy}
+        description={description}
+        mode="manual"
+        onDescriptionSaved={vi.fn()}
+        onNavigateToStep={vi.fn()}
+        onViewPreview={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Aanpassen Samenvatting' }));
+
+    expect(screen.getByLabelText('Samenvatting')).toHaveValue('A great job summary');
+    // The other two sections stay read-only.
+    expect(screen.queryByLabelText('Over de rol')).not.toBeInTheDocument();
+    expect(screen.getByText('Role text')).toBeInTheDocument();
+  });
+
+  it('"Opslaan" saves the full current values with the edited section applied, then returns to read-only', async () => {
+    const user = userEvent.setup();
+    vi.mocked(descriptionApi.saveDescription).mockResolvedValue({ ...description, summary: 'Updated summary' });
     const onDescriptionSaved = vi.fn();
     render(
       <ReviewVacancy
@@ -154,13 +192,91 @@ describe('ReviewVacancy', () => {
       />,
     );
 
-    await user.type(screen.getByLabelText('Samenvatting'), '!');
-    await user.click(screen.getByRole('button', { name: 'Bekijk je vacature' }));
+    await user.click(screen.getByRole('button', { name: 'Aanpassen Samenvatting' }));
+    await user.clear(screen.getByLabelText('Samenvatting'));
+    await user.type(screen.getByLabelText('Samenvatting'), 'Updated summary');
+    await user.click(screen.getByRole('button', { name: 'Opslaan' }));
 
-    await waitFor(() => expect(descriptionApi.saveDescription).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(descriptionApi.saveDescription).toHaveBeenCalledWith(
+        'vacancy-1',
+        expect.objectContaining({
+          summary: 'Updated summary',
+          jobDescription: 'Role text',
+          tasks: 'Task list',
+        }),
+      ),
+    );
+    expect(onDescriptionSaved).toHaveBeenCalledWith({ ...description, summary: 'Updated summary' });
+    expect(await screen.findByText('Updated summary')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Samenvatting')).not.toBeInTheDocument();
   });
 
-  it('calls onViewPreview when "Bekijk je vacature" is clicked', async () => {
+  it('"Annuleren" reverts the section without calling saveDescription', async () => {
+    const user = userEvent.setup();
+    render(
+      <ReviewVacancy
+        vacancyId="vacancy-1"
+        vacancy={vacancy}
+        description={description}
+        mode="manual"
+        onDescriptionSaved={vi.fn()}
+        onNavigateToStep={vi.fn()}
+        onViewPreview={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Aanpassen Samenvatting' }));
+    await user.type(screen.getByLabelText('Samenvatting'), ' extra text');
+    await user.click(screen.getByRole('button', { name: 'Annuleren' }));
+
+    expect(descriptionApi.saveDescription).not.toHaveBeenCalled();
+    expect(screen.getByText('A great job summary')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Samenvatting')).not.toBeInTheDocument();
+  });
+
+  it('disables "Bekijk je vacature" while a section is mid-edit', async () => {
+    const user = userEvent.setup();
+    render(
+      <ReviewVacancy
+        vacancyId="vacancy-1"
+        vacancy={vacancy}
+        description={description}
+        mode="manual"
+        onDescriptionSaved={vi.fn()}
+        onNavigateToStep={vi.fn()}
+        onViewPreview={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Bekijk je vacature' })).toBeEnabled();
+
+    await user.click(screen.getByRole('button', { name: 'Aanpassen Samenvatting' }));
+    expect(screen.getByRole('button', { name: 'Bekijk je vacature' })).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Annuleren' }));
+    expect(screen.getByRole('button', { name: 'Bekijk je vacature' })).toBeEnabled();
+  });
+
+  it('renders "Bekijk je vacature" inside the Card', () => {
+    const { container } = render(
+      <ReviewVacancy
+        vacancyId="vacancy-1"
+        vacancy={vacancy}
+        description={description}
+        mode="manual"
+        onDescriptionSaved={vi.fn()}
+        onNavigateToStep={vi.fn()}
+        onViewPreview={vi.fn()}
+      />,
+    );
+
+    const card = container.querySelector('[class*="card"]');
+    const button = screen.getByRole('button', { name: 'Bekijk je vacature' });
+    expect(card).toContainElement(button);
+  });
+
+  it('saves the current values via saveDescription when "Bekijk je vacature" is clicked', async () => {
     const user = userEvent.setup();
     vi.mocked(descriptionApi.saveDescription).mockResolvedValue(description);
     const onViewPreview = vi.fn();
@@ -178,6 +294,7 @@ describe('ReviewVacancy', () => {
 
     await user.click(screen.getByRole('button', { name: 'Bekijk je vacature' }));
 
+    await waitFor(() => expect(descriptionApi.saveDescription).toHaveBeenCalledWith('vacancy-1', description));
     await waitFor(() => expect(onViewPreview).toHaveBeenCalledTimes(1));
   });
 
@@ -212,5 +329,59 @@ describe('ReviewVacancy', () => {
     );
 
     expect(screen.getByText('Salaris in overleg')).toBeInTheDocument();
+  });
+
+  it('shows the contact phone number alongside name/role/email (regression: phone was missing entirely)', () => {
+    render(
+      <ReviewVacancy
+        vacancyId="vacancy-1"
+        vacancy={vacancy}
+        description={description}
+        mode="manual"
+        onDescriptionSaved={vi.fn()}
+        onNavigateToStep={vi.fn()}
+        onViewPreview={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/0612345678/)).toBeInTheDocument();
+  });
+
+  it('shows a holiday-days line reconstructed from the annual offer figure when no holidayInput is given', () => {
+    render(
+      <ReviewVacancy
+        vacancyId="vacancy-1"
+        vacancy={vacancy}
+        description={description}
+        mode="manual"
+        onDescriptionSaved={vi.fn()}
+        onNavigateToStep={vi.fn()}
+        onViewPreview={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('20 dagen per jaar')).toBeInTheDocument();
+  });
+
+  it('prefers the page-supplied holidayInput over the reconstructed annual figure', () => {
+    const vacancyWithConvertedHolidays = {
+      ...vacancy,
+      offer: { ...vacancy.offer, numberOfHolidays: 260 },
+    } as unknown as VacancyResponse;
+    render(
+      <ReviewVacancy
+        vacancyId="vacancy-1"
+        vacancy={vacancyWithConvertedHolidays}
+        description={description}
+        mode="manual"
+        holidayInput={{ amount: 5, period: 'WEEKLY' }}
+        onDescriptionSaved={vi.fn()}
+        onNavigateToStep={vi.fn()}
+        onViewPreview={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('5 dagen per week')).toBeInTheDocument();
+    expect(screen.queryByText('260 dagen per jaar')).not.toBeInTheDocument();
   });
 });

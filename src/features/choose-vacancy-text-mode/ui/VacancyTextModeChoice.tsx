@@ -1,5 +1,5 @@
 import { Pencil, Sparkles } from 'lucide-react';
-import { Card, ChoiceCard, Button } from '../../../shared/ui';
+import { Card, CardHeader, ChoiceCard, Button } from '../../../shared/ui';
 import styles from './VacancyTextModeChoice.module.css';
 
 export type VacancyTextMode = 'manual' | 'ai';
@@ -14,8 +14,10 @@ export function VacancyTextModeChoice({ mode, onModeChange, onNext }: VacancyTex
   return (
     <div>
       <Card>
-        <h2>Vacaturetekst</h2>
-        <p>Schrijf de tekst zelf, of laat Jobzy een concept opstellen op basis van een paar korte vragen.</p>
+        <CardHeader
+          title="Vacaturetekst"
+          description="Schrijf de tekst zelf, of laat Jobzy een concept opstellen op basis van een paar korte vragen."
+        />
         <div className={styles.grid}>
           <ChoiceCard
             icon={<Pencil size={22} aria-hidden="true" />}

@@ -118,6 +118,44 @@ describe('VacancyCoreForm', () => {
     });
   });
 
+  it('preserves minHoursPerWeek/maxHoursPerWeek in onSaved when the patchVacancyCore response omits them (§11.2)', async () => {
+    const user = userEvent.setup();
+    vi.mocked(vacancyApi.patchVacancyCore).mockResolvedValue({
+      id: 'vacancy-1',
+      status: 'DRAFT',
+      jobTitle: 'Senior Backend Developer',
+      category: 'ENGINEERING',
+      location: { country: 'NL', city: 'Amsterdam' },
+      workplaceType: 'HYBRID',
+      createdAt: '2026-09-19T00:00:00Z',
+      // minHoursPerWeek/maxHoursPerWeek omitted, as a contract-legal but data-losing response.
+    } as unknown as VacancyResponse);
+    const onSaved = vi.fn();
+    render(
+      <VacancyCoreForm
+        vacancyId="vacancy-1"
+        initialValues={{
+          jobTitle: 'Senior Backend Developer',
+          category: 'ENGINEERING',
+          country: 'NL',
+          city: 'Amsterdam',
+          workplaceType: 'HYBRID',
+          minHoursPerWeek: 24,
+          maxHoursPerWeek: 36,
+        }}
+        onSaved={onSaved}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+
+    await waitFor(() =>
+      expect(onSaved).toHaveBeenCalledWith(
+        expect.objectContaining({ minHoursPerWeek: 24, maxHoursPerWeek: 36 }),
+      ),
+    );
+  });
+
   it('renders per-field errors from a 400 ApiError response', async () => {
     const user = userEvent.setup();
     vi.mocked(vacancyApi.createVacancy).mockRejectedValue({

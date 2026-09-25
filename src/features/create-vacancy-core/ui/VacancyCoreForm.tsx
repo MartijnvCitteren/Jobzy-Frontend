@@ -10,7 +10,16 @@ import {
 import { countries } from '../../../entities/location';
 import { toFieldErrors } from '../../../shared/lib/problem-details';
 import type { ApiError } from '../../../shared/api';
-import { Button, Card, ErrorBanner, NumberField, Select, SegmentedControl, TextField } from '../../../shared/ui';
+import {
+  Button,
+  Card,
+  CardHeader,
+  ErrorBanner,
+  NumberField,
+  Select,
+  SegmentedControl,
+  TextField,
+} from '../../../shared/ui';
 import styles from './VacancyCoreForm.module.css';
 
 export interface VacancyCoreFormValues {
@@ -98,12 +107,21 @@ export function VacancyCoreForm({ vacancyId, initialValues, onSaved, onNext }: V
           maxHoursPerWeek: values.maxHoursPerWeek as number,
         });
       } else {
-        vacancy = await vacancyApi.patchVacancyCore(vacancyId, {
+        const response = await vacancyApi.patchVacancyCore(vacancyId, {
           jobTitle: values.jobTitle,
           category: values.category as VacancyCategory,
           location,
           workplaceType: values.workplaceType,
         });
+        // §11.2: `patchVacancyCore` never sends hours (ADR-0002 — read-only post-
+        // creation), and `VacancyResponse` doesn't require them either, so fall back to
+        // what this form already knows (mirrors `initialValues`) rather than trusting a
+        // response that may omit them.
+        vacancy = {
+          ...response,
+          minHoursPerWeek: response.minHoursPerWeek ?? (values.minHoursPerWeek as number),
+          maxHoursPerWeek: response.maxHoursPerWeek ?? (values.maxHoursPerWeek as number),
+        };
       }
       onSaved(vacancy);
       if (advance) {
@@ -123,8 +141,10 @@ export function VacancyCoreForm({ vacancyId, initialValues, onSaved, onNext }: V
 
   return (
     <Card>
-      <h2>Basisgegevens</h2>
-      <p>Deze velden bepalen waar je vacature terechtkomt en hoe kandidaten hem vinden.</p>
+      <CardHeader
+        title="Basisgegevens"
+        description="Deze velden bepalen waar je vacature terechtkomt en hoe kandidaten hem vinden."
+      />
       <ErrorBanner message={topLevelError} />
       <TextField
         label="Functietitel"

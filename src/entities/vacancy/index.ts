@@ -18,5 +18,14 @@ export {
   salaryPeriodOptions,
 } from './lib/labels';
 export { formatSalary } from './lib/salary';
+export { formatHoursPerWeek } from './lib/hours';
+export {
+  holidayPeriodLabels,
+  holidayPeriodOptions,
+  toAnnualHolidayDays,
+  fromAnnualHolidayDays,
+  formatHolidayDays,
+} from './lib/holidays';
+export type { HolidayPeriod } from './lib/holidays';
 export { vacancyApi } from './api/vacancyApi';
 export type { VacancyCorePatch, VacancyContactOfferPatch } from './api/vacancyApi';

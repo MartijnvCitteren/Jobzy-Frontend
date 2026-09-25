@@ -36,6 +36,12 @@ describe('VacancyDescriptionEditor', () => {
     expect(screen.queryByLabelText('Wat wij bieden')).not.toBeInTheDocument();
   });
 
+  it('renders "Vacaturetekst" as an h2 heading (standalone step card)', () => {
+    render(<VacancyDescriptionEditor vacancyId="vacancy-1" onSaved={vi.fn()} />);
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Vacaturetekst' })).toBeInTheDocument();
+  });
+
   it('pre-fills fields from a passed-in draft', () => {
     const draft: VacancyDescriptionResponse = {
       summary: 'Generated summary',
@@ -66,7 +72,7 @@ describe('VacancyDescriptionEditor', () => {
     render(<VacancyDescriptionEditor vacancyId="vacancy-1" onSaved={onSaved} />);
 
     await user.type(screen.getByLabelText('Samenvatting'), 'Written by hand');
-    await user.click(screen.getByRole('button', { name: 'Concept opslaan' }));
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
 
     await waitFor(() =>
       expect(descriptionApi.saveDescription).toHaveBeenCalledWith(

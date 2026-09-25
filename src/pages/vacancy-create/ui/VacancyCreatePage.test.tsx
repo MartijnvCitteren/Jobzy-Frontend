@@ -106,7 +106,7 @@ describe('VacancyCreatePage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Netwerkfout: de server is niet bereikbaar.');
   });
 
-  it('full click-through in manual mode: step 1 -> mode choice -> step 3 -> step 4 -> preview -> publish -> published', async () => {
+  it('full click-through in manual mode: step 1 -> mode choice -> step 2 write -> step 3 -> step 4 -> preview -> publish -> published', async () => {
     const user = userEvent.setup();
     vi.mocked(vacancyApi.createVacancy).mockResolvedValue(createdVacancy);
     vi.mocked(descriptionApi.saveDescription).mockResolvedValue({ summary: 'Written by hand' });
@@ -128,11 +128,16 @@ describe('VacancyCreatePage', () => {
     await user.click(screen.getByRole('button', { name: /Zelf schrijven/ }));
     await user.click(screen.getByRole('button', { name: 'Volgende' }));
 
+    // Step 2, write view: still on step 2 (Vacaturetekst), contact fields not present yet.
     expect(await screen.findByLabelText('Samenvatting')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Naam')).not.toBeInTheDocument();
     await user.type(screen.getByLabelText('Samenvatting'), 'Written by hand');
-    await user.click(screen.getByRole('button', { name: 'Concept opslaan' }));
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
     await waitFor(() => expect(descriptionApi.saveDescription).toHaveBeenCalledTimes(1));
 
+    // Step 3: contact/offer only, description fields no longer present.
+    expect(await screen.findByLabelText('Naam')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Samenvatting')).not.toBeInTheDocument();
     await user.type(screen.getByLabelText('Naam'), 'Jane Doe');
     await user.type(screen.getByLabelText('E-mailadres'), 'jane@example.com');
     await user.click(screen.getByRole('button', { name: 'Volgende' }));
@@ -149,6 +154,86 @@ describe('VacancyCreatePage', () => {
 
     await waitFor(() => expect(vacancyApi.publishVacancy).toHaveBeenCalledWith('vacancy-1'));
     expect(await screen.findByText(/Vacature gepubliceerd/)).toBeInTheDocument();
+  });
+
+  it('returning to step 2 via the Stepper after a manual draft exists lands on the write view, not the mode choice', async () => {
+    const user = userEvent.setup();
+    vi.mocked(vacancyApi.createVacancy).mockResolvedValue(createdVacancy);
+    vi.mocked(descriptionApi.saveDescription).mockResolvedValue({ summary: 'Written by hand' });
+    vi.mocked(vacancyApi.patchVacancyContactOffer).mockResolvedValue({
+      ...createdVacancy,
+      contactPerson: { name: 'Jane Doe', email: 'jane@example.com' },
+    } as unknown as VacancyResponse);
+
+    renderPage();
+
+    await completeStep1(user);
+    expect(await screen.findByRole('heading', { name: 'Vacaturetekst' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Zelf schrijven/ }));
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+
+    expect(await screen.findByLabelText('Samenvatting')).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Samenvatting'), 'Written by hand');
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+    await waitFor(() => expect(descriptionApi.saveDescription).toHaveBeenCalledTimes(1));
+
+    expect(await screen.findByLabelText('Naam')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Vacaturetekst/ }));
+
+    expect(await screen.findByLabelText('Samenvatting')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Zelf schrijven/ })).not.toBeInTheDocument();
+  });
+
+  it('"Terug naar tekstkeuze" on the write view resets step2View so mode can be switched', async () => {
+    const user = userEvent.setup();
+    vi.mocked(vacancyApi.createVacancy).mockResolvedValue(createdVacancy);
+
+    renderPage();
+
+    await completeStep1(user);
+    expect(await screen.findByRole('heading', { name: 'Vacaturetekst' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Zelf schrijven/ }));
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+
+    expect(await screen.findByLabelText('Samenvatting')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Terug naar tekstkeuze' }));
+
+    expect(await screen.findByRole('button', { name: /Jobzy stelt een concept op/ })).toBeInTheDocument();
+  });
+
+  it('threads the entered vakantiedagen amount/period through to Overzicht instead of the converted annual figure', async () => {
+    const user = userEvent.setup();
+    vi.mocked(vacancyApi.createVacancy).mockResolvedValue(createdVacancy);
+    vi.mocked(descriptionApi.saveDescription).mockResolvedValue({ summary: 'Written by hand' });
+    vi.mocked(vacancyApi.patchVacancyContactOffer).mockResolvedValue({
+      ...createdVacancy,
+      contactPerson: { name: 'Jane Doe', email: 'jane@example.com' },
+      offer: { numberOfHolidays: 260 },
+    } as unknown as VacancyResponse);
+
+    renderPage();
+
+    await completeStep1(user);
+    expect(await screen.findByRole('heading', { name: 'Vacaturetekst' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Zelf schrijven/ }));
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+
+    expect(await screen.findByLabelText('Samenvatting')).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Samenvatting'), 'Written by hand');
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+    await waitFor(() => expect(descriptionApi.saveDescription).toHaveBeenCalledTimes(1));
+
+    await user.type(screen.getByLabelText('Naam'), 'Jane Doe');
+    await user.type(screen.getByLabelText('E-mailadres'), 'jane@example.com');
+    await user.type(screen.getByLabelText('Aantal vakantiedagen'), '5');
+    await user.selectOptions(screen.getByLabelText('Periode vakantiedagen'), 'WEEKLY');
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+    await waitFor(() => expect(vacancyApi.patchVacancyContactOffer).toHaveBeenCalledTimes(1));
+
+    expect(await screen.findByRole('heading', { name: 'Overzicht' })).toBeInTheDocument();
+    expect(screen.getByText('5 dagen per week')).toBeInTheDocument();
+    expect(screen.queryByText('260 dagen per jaar')).not.toBeInTheDocument();
   });
 
   it('full click-through in AI mode: mode choice opens the 3-questions modal and gates step 3/4 on the shared generation phase', async () => {
@@ -192,6 +277,6 @@ describe('VacancyCreatePage', () => {
     await waitFor(() => expect(vacancyApi.patchVacancyContactOffer).toHaveBeenCalledTimes(1));
 
     expect(await screen.findByRole('heading', { name: 'Overzicht' })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByLabelText('Samenvatting')).toHaveValue('AI summary'));
+    await waitFor(() => expect(screen.getByText('AI summary')).toBeInTheDocument());
   });
 });

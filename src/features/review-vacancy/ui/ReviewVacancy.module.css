@@ -34,6 +34,25 @@
   justify-content: space-between;
 }
 
+.sectionActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--border-hairline);
+  height: 0;
+  margin: var(--space-2) 0;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-2);
+}
+
 .regenerateButton {
   background: none;
   border: none;
@@ -57,5 +76,9 @@
 }
 
 .salaryLine {
+  font-family: var(--font-mono);
+}
+
+.holidaysLine {
   font-family: var(--font-mono);
 }

@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Sparkles, CircleCheck } from 'lucide-react';
 import {
+  holidayPeriodOptions,
   salaryPeriodOptions,
+  toAnnualHolidayDays,
   vacancyApi,
   type ContactPerson,
+  type HolidayPeriod,
   type Offer,
   type SalaryPeriod,
   type VacancyResponse,
@@ -20,6 +23,11 @@ import styles from './VacancyContactOfferForm.module.css';
  */
 export type VacancyContactOfferGenerationPhase = 'idle' | 'generating' | 'ready' | 'failed';
 
+export interface HolidayInput {
+  amount: number;
+  period: HolidayPeriod;
+}
+
 export interface VacancyContactOfferFormProps {
   vacancyId: string;
   onSaved: (vacancy: VacancyResponse) => void;
@@ -29,6 +37,8 @@ export interface VacancyContactOfferFormProps {
     contactPerson?: ContactPerson;
     offer?: Offer;
   };
+  /** Surfaces the raw entered vakantiedagen amount + period (ADR-0005) for §11.3's page-local `holidayInput` state. */
+  onHolidayInputChange?: (input: HolidayInput | undefined) => void;
 }
 
 interface FormValues {
@@ -104,8 +114,10 @@ export function VacancyContactOfferForm({
   mode = 'manual',
   phase = 'generating',
   initialValues,
+  onHolidayInputChange,
 }: VacancyContactOfferFormProps) {
   const [values, setValues] = useState<FormValues>(() => toFormValues(initialValues));
+  const [holidayPeriod, setHolidayPeriod] = useState<HolidayPeriod>('ANNUAL');
   const [hideSalary, setHideSalary] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [topLevelError, setTopLevelError] = useState<string | undefined>(undefined);
@@ -125,22 +137,35 @@ export function VacancyContactOfferForm({
 
     setSaving(true);
     try {
-      const vacancy = await vacancyApi.patchVacancyContactOffer(vacancyId, {
-        contactPerson: {
-          name: values.name,
-          role: values.role || undefined,
-          phone: values.phone || undefined,
-          email: values.email,
-        },
-        offer: {
-          salaryMin: hideSalary || values.salaryMin === '' ? null : values.salaryMin,
-          salaryMax: hideSalary || values.salaryMax === '' ? null : values.salaryMax,
-          currency: hideSalary ? undefined : values.currency || undefined,
-          salaryPeriod: hideSalary ? undefined : values.salaryPeriod || undefined,
-          numberOfHolidays: values.numberOfHolidays === '' ? null : values.numberOfHolidays,
-        },
+      const submittedContactPerson: ContactPerson = {
+        name: values.name,
+        role: values.role || undefined,
+        phone: values.phone || undefined,
+        email: values.email,
+      };
+      const submittedOffer: Offer = {
+        salaryMin: hideSalary || values.salaryMin === '' ? null : values.salaryMin,
+        salaryMax: hideSalary || values.salaryMax === '' ? null : values.salaryMax,
+        currency: hideSalary ? undefined : values.currency || undefined,
+        salaryPeriod: hideSalary ? undefined : values.salaryPeriod || undefined,
+        numberOfHolidays:
+          values.numberOfHolidays === '' ? null : toAnnualHolidayDays(values.numberOfHolidays, holidayPeriod),
+      };
+      const response = await vacancyApi.patchVacancyContactOffer(vacancyId, {
+        contactPerson: submittedContactPerson,
+        offer: submittedOffer,
       });
-      onSaved(vacancy);
+      // §11.2: `VacancyResponse` doesn't require contactPerson/offer — a response that
+      // omits a section the user just submitted is contract-legal, so fall back to what
+      // was sent rather than silently dropping it from what the page trusts as "saved".
+      onSaved({
+        ...response,
+        contactPerson: response.contactPerson ?? submittedContactPerson,
+        offer: response.offer ?? submittedOffer,
+      });
+      onHolidayInputChange?.(
+        values.numberOfHolidays === '' ? undefined : { amount: values.numberOfHolidays, period: holidayPeriod },
+      );
     } catch (caught) {
       const apiError = caught as ApiError;
       if (apiError.status === 400 && apiError.errors?.length) {
@@ -173,25 +198,35 @@ export function VacancyContactOfferForm({
           <Checkbox label="Liever niet delen" checked={hideSalary} onChange={setHideSalary} />
         </div>
 
-        {!hideSalary && (
-          <div className={styles.salaryGrid}>
-            <NumberField label="Salaris minimum" value={values.salaryMin} onChange={(v) => setField('salaryMin', v)} />
-            <NumberField label="Salaris maximum" value={values.salaryMax} onChange={(v) => setField('salaryMax', v)} />
-            <Select
-              label="Salarisperiode"
-              value={values.salaryPeriod}
-              onChange={(v) => setField('salaryPeriod', v as SalaryPeriod)}
-              options={salaryPeriodOptions}
-              placeholder="Kies een periode"
-              error={fieldErrors.salaryPeriod}
-            />
+        <div className={styles.salaryGrid}>
+          {!hideSalary && (
+            <>
+              <NumberField label="Salaris minimum" value={values.salaryMin} onChange={(v) => setField('salaryMin', v)} />
+              <NumberField label="Salaris maximum" value={values.salaryMax} onChange={(v) => setField('salaryMax', v)} />
+              <Select
+                label="Salarisperiode"
+                value={values.salaryPeriod}
+                onChange={(v) => setField('salaryPeriod', v as SalaryPeriod)}
+                options={salaryPeriodOptions}
+                placeholder="Kies een periode"
+                error={fieldErrors.salaryPeriod}
+              />
+            </>
+          )}
+          <div className={styles.holidaysRow}>
             <NumberField
               label="Aantal vakantiedagen"
               value={values.numberOfHolidays}
               onChange={(v) => setField('numberOfHolidays', v)}
             />
+            <Select
+              label="Periode vakantiedagen"
+              value={holidayPeriod}
+              onChange={(v) => setHolidayPeriod(v as HolidayPeriod)}
+              options={holidayPeriodOptions}
+            />
           </div>
-        )}
+        </div>
         {!hideSalary && (
           <Select
             label="Valuta"

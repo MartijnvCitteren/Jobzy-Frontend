@@ -76,7 +76,15 @@ describe('VacancyContactOfferForm', () => {
         }),
       ),
     );
-    expect(onSaved).toHaveBeenCalledWith(vacancy);
+    // §11.2: onSaved receives the submitted contactPerson/offer merged in, since the
+    // mocked response here (like a contract-legal real one) omits them.
+    expect(onSaved).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'vacancy-1',
+        contactPerson: expect.objectContaining({ name: 'Jane Doe', email: 'jane@example.com' }),
+        offer: expect.objectContaining({ salaryMin: 3000, currency: 'EUR', salaryPeriod: 'MONTHLY' }),
+      }),
+    );
   });
 
   it('hides the salary grid and clears salary fields on save when "Liever niet delen" is checked', async () => {
@@ -105,6 +113,60 @@ describe('VacancyContactOfferForm', () => {
         }),
       ),
     );
+  });
+
+  it('converts the entered vakantiedagen amount to an annual figure for a non-ANNUAL period before saving', async () => {
+    const user = userEvent.setup();
+    vi.mocked(vacancyApi.patchVacancyContactOffer).mockResolvedValue(vacancy);
+    render(<VacancyContactOfferForm vacancyId="vacancy-1" onSaved={vi.fn()} />);
+
+    await fillContactPerson(user);
+    await user.type(screen.getByLabelText('Aantal vakantiedagen'), '5');
+    await user.selectOptions(screen.getByLabelText('Periode vakantiedagen'), 'WEEKLY');
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+
+    await waitFor(() =>
+      expect(vacancyApi.patchVacancyContactOffer).toHaveBeenCalledWith(
+        'vacancy-1',
+        expect.objectContaining({
+          offer: expect.objectContaining({ numberOfHolidays: 260 }),
+        }),
+      ),
+    );
+  });
+
+  it('surfaces the raw entered holiday amount and period via onHolidayInputChange after a successful save', async () => {
+    const user = userEvent.setup();
+    vi.mocked(vacancyApi.patchVacancyContactOffer).mockResolvedValue(vacancy);
+    const onHolidayInputChange = vi.fn();
+    render(
+      <VacancyContactOfferForm
+        vacancyId="vacancy-1"
+        onSaved={vi.fn()}
+        onHolidayInputChange={onHolidayInputChange}
+      />,
+    );
+
+    await fillContactPerson(user);
+    await user.type(screen.getByLabelText('Aantal vakantiedagen'), '5');
+    await user.selectOptions(screen.getByLabelText('Periode vakantiedagen'), 'WEEKLY');
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+
+    await waitFor(() =>
+      expect(onHolidayInputChange).toHaveBeenCalledWith({ amount: 5, period: 'WEEKLY' }),
+    );
+  });
+
+  it('keeps "Aantal vakantiedagen" visible and interactive when "Liever niet delen" is checked (regression)', async () => {
+    const user = userEvent.setup();
+    render(<VacancyContactOfferForm vacancyId="vacancy-1" onSaved={vi.fn()} />);
+
+    expect(screen.getByLabelText('Aantal vakantiedagen')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Liever niet delen' }));
+
+    expect(screen.getByLabelText('Aantal vakantiedagen')).toBeInTheDocument();
+    expect(screen.getByLabelText('Aantal vakantiedagen')).toBeEnabled();
   });
 
   it('renders a generating banner in AI mode driven by the phase prop, without polling itself', async () => {
@@ -166,6 +228,31 @@ describe('VacancyContactOfferForm', () => {
         'vacancy-1',
         expect.objectContaining({
           offer: expect.objectContaining({ salaryMin: 4000, salaryMax: 5000, currency: 'EUR', salaryPeriod: 'MONTHLY' }),
+        }),
+      ),
+    );
+  });
+
+  it('preserves the just-submitted contactPerson/offer in onSaved when the PATCH response omits them (§11.2)', async () => {
+    const user = userEvent.setup();
+    vi.mocked(vacancyApi.patchVacancyContactOffer).mockResolvedValue({
+      id: 'vacancy-1',
+      // contactPerson and offer omitted, as a contract-legal but data-losing response.
+    } as unknown as VacancyResponse);
+    const onSaved = vi.fn();
+    render(<VacancyContactOfferForm vacancyId="vacancy-1" onSaved={onSaved} />);
+
+    await fillContactPerson(user);
+    await user.type(screen.getByLabelText('Salaris minimum'), '3000');
+    await user.selectOptions(screen.getByLabelText('Valuta'), 'EUR');
+    await user.selectOptions(screen.getByLabelText('Salarisperiode'), 'MONTHLY');
+    await user.click(screen.getByRole('button', { name: 'Volgende' }));
+
+    await waitFor(() =>
+      expect(onSaved).toHaveBeenCalledWith(
+        expect.objectContaining({
+          contactPerson: expect.objectContaining({ name: 'Jane Doe', email: 'jane@example.com' }),
+          offer: expect.objectContaining({ salaryMin: 3000, currency: 'EUR', salaryPeriod: 'MONTHLY' }),
         }),
       ),
     );

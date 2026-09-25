@@ -1,4 +1,4 @@
-import { workplaceTypeLabels, formatSalary, type VacancyResponse } from '../../../entities/vacancy';
+import { workplaceTypeLabels, formatSalary, formatHoursPerWeek, type VacancyResponse } from '../../../entities/vacancy';
 import { countries } from '../../../entities/location';
 import type { VacancyDescriptionResponse } from '../../../entities/vacancy-description';
 import { Button, Card } from '../../../shared/ui';
@@ -38,7 +38,8 @@ export function VacancyPreview({ vacancy, description, onBack, onSaveDraft, onRe
             </span>
             <span className={styles.chip}>{workplaceTypeLabels[vacancy.workplaceType]}</span>
             <span className={`${styles.chip} ${styles.mono}`}>
-              {vacancy.minHoursPerWeek}–{vacancy.maxHoursPerWeek} uur per week
+              {/* minHoursPerWeek/maxHoursPerWeek are optional on VacancyResponse for schema laxity only — always set once a vacancy exists, required by VacancyCoreRequest at creation. */}
+              {formatHoursPerWeek(vacancy.minHoursPerWeek ?? 0, vacancy.maxHoursPerWeek ?? 0)}
             </span>
             <span className={`${styles.chip} ${styles.mono}`}>{formatSalary(vacancy.offer)}</span>
           </div>

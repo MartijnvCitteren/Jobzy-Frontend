@@ -31,6 +31,9 @@ test.describe('create-vacancy happy path', () => {
     });
 
     await page.route(`${API_BASE_URL}/vacancy/vacancy-e2e-1/description`, async (route) => {
+      // Echo the submitted body back (like the real API's whole-object PATCH-style save),
+      // so the Overzicht "Opslaan" round-trip below reflects what was actually typed.
+      const submitted = (route.request().postDataJSON() ?? {}) as Record<string, unknown>;
       await route.fulfill({
         status: 201,
         contentType: 'application/json',
@@ -38,6 +41,7 @@ test.describe('create-vacancy happy path', () => {
           summary: 'Written by hand for the e2e test',
           jobDescription: 'Role text',
           tasks: 'Task list',
+          ...submitted,
         }),
       });
     });
@@ -105,17 +109,26 @@ test.describe('create-vacancy happy path', () => {
     await page.getByRole('button', { name: 'Zelf schrijven' }).click();
     await page.getByRole('button', { name: 'Volgende' }).click();
 
-    // Step 3: manual variant — description + contact/offer
+    // Step 2, write view: Vacaturetekst alone (still step 2 — the manual/AI split).
     await page.getByLabel('Samenvatting').fill('Written by hand for the e2e test');
-    await page.getByRole('button', { name: 'Concept opslaan' }).click();
+    await page.getByRole('button', { name: 'Volgende' }).click();
+
+    // Step 3: Contact en voorwaarden only — no description fields on this page anymore.
+    await expect(page.getByLabel('Samenvatting')).toHaveCount(0);
     await page.getByLabel('Naam').fill('Jane Doe');
     await page.getByLabel('E-mailadres').fill('jane@example.com');
     await page.getByRole('button', { name: 'Volgende' }).click();
 
-    // Step 4: editable Overzicht
+    // Step 4: read-only Overzicht with per-section edit
     await expect(page.getByRole('heading', { name: 'Overzicht' })).toBeVisible();
     await expect(page.getByText('Senior Backend Developer')).toBeVisible();
     await expect(page.getByText('Jane Doe')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Aanpassen Samenvatting' }).click();
+    await page.getByLabel('Samenvatting').fill('Updated via Overzicht for the e2e test');
+    await page.getByRole('button', { name: 'Opslaan' }).click();
+    await expect(page.getByText('Updated via Overzicht for the e2e test')).toBeVisible();
+
     await page.getByRole('button', { name: 'Bekijk je vacature' }).click();
 
     // Preview — candidate's view

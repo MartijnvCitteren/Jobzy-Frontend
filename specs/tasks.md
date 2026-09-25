@@ -460,12 +460,20 @@ description renders/omits correctly; the field-width/resize fix is CSS-only — 
 test, note this explicitly rather than silently skipping (existing `TextField`/
 `NumberField` tests must keep passing unchanged).
 
+**Done.** Added `shared/ui/CardHeader.tsx` (+`.module.css`, `.test.tsx`), exported from
+`shared/ui/index.ts`. Fixed `fields.module.css`: `.control { width: 100%; max-width:
+100% }` and `textarea.control { resize: vertical }`. No new test for the CSS-only fix;
+existing `TextField`/`NumberField`-consuming tests stayed green.
+
 ## T035 — Adopt `CardHeader` in step 1 and step 2's choice view
 Plan: §11.1 item 1. Swap the raw `<h2>`+`<p>` in `create-vacancy-core/ui/VacancyCoreForm.tsx`
 ("Basisgegevens") and `choose-vacancy-text-mode/ui/VacancyTextModeChoice.tsx`
 ("Vacaturetekst") for `CardHeader`. No behavioural change — existing
 `getByRole('heading', { name: … })` queries in both components' tests must keep passing
 against `CardHeader`'s rendered output. Depends on T034.
+
+**Done.** `VacancyCoreForm` and `VacancyTextModeChoice` now render `CardHeader` instead
+of raw `<h2>`+`<p>`. No behavioural change; existing tests passed unmodified.
 
 ## T036 — Page flow split: step 2 manual "Vacaturetekst" write view, step 3 = Contact en voorwaarden only
 Plan: §11.1 item 2. `pages/vacancy-create/ui/VacancyCreatePage.tsx`: add `step2View:
@@ -486,6 +494,16 @@ reset). Tests: `edit-vacancy-description` button label + `onSaved` call;
 one assertion that Stepper-click-back-to-step-2 with an existing manual draft lands on
 `'write'`, not `'choose'`. Depends on T034 (uses `CardHeader`).
 
+**Done.** `VacancyCreatePage` gained `step2View` state; manual mode's "Volgende" on the
+choice view now sets `step2View: 'write'` and stays on step 2; the two `currentStep ===
+3` branches collapsed into one (`edit-vacancy-contact-offer` only). Added a ghost "Terug
+naar tekstkeuze" button on the write view. `VacancyDescriptionEditor`'s save button
+renamed to "Volgende" (italic `.saveDraftButton` CSS rule removed entirely, along with
+the now-empty CSS module file), heading bumped to `CardHeader`/h2. Page wires
+`onSaved` on the write view to also advance to step 3. Updated the page's manual
+click-through test for the new step 2→2→3 shape and added two new tests (Stepper-back
+lands on `'write'`; "Terug naar tekstkeuze" resets to `'choose'`).
+
 ## T037 — Vakantiedagen visibility fix (own row, not hidden by "Liever niet delen", no grid overflow)
 Plan: §11.1 items 4a, 4b. `edit-vacancy-contact-offer/ui/VacancyContactOfferForm.tsx` +
 `.module.css`: move `numberOfHolidays`'s `NumberField` out of the `{!hideSalary && …}`
@@ -495,6 +513,12 @@ the grid track wider than its cell (on top of T034's `width: 100%` fix, which al
 isn't sufficient for grid tracks containing a native `<select>`). Tests: vakantiedagen
 renders and stays visible/interactive when "Liever niet delen" is checked (regression
 test directly against the reported bug). Depends on T034.
+
+**Done.** `numberOfHolidays`'s `NumberField` moved out of the `{!hideSalary && …}` block
+into its own always-visible `.holidaysRow` (`grid-column: 1 / -1`) inside the same
+`.salaryGrid` grid container (kept as one grid so the span actually takes effect); added
+`.salaryGrid > * { min-width: 0 }`. New regression test confirms vakantiedagen stays
+visible/enabled with "Liever niet delen" checked.
 
 ## T038 — Holiday period selector + conversion/format helper — ADR-0005
 Plan: §11.1 item 4c, §11.4, `.claude/adr/0005-holiday-period-input.md`. New
@@ -512,6 +536,16 @@ it to the page (`onSaved`/a small `onHolidayInputChange` prop — implementer's 
 strings, and that the outgoing PATCH body's `numberOfHolidays` reflects the converted
 (not raw) value for a non-ANNUAL period. Depends on T037.
 
+**Done.** New `entities/vacancy/lib/holidays.ts` (+`.test.ts`, 10 cases) with
+`HolidayPeriod`, `holidayPeriodOptions`/`holidayPeriodLabels`, `toAnnualHolidayDays`,
+`fromAnnualHolidayDays`, `formatHolidayDays`; exported from `entities/vacancy/index.ts`.
+`VacancyContactOfferForm` gained a "Periode vakantiedagen" `Select` next to the amount
+field, local `holidayPeriod` state (default `'ANNUAL'`), converts to an annual figure via
+`toAnnualHolidayDays` before the PATCH call, and surfaces the raw `{ amount, period }`
+via a new `onHolidayInputChange` prop (implementer's call, per the task text) after a
+successful save. New tests cover the conversion in the outgoing PATCH body and the
+`onHolidayInputChange` callback.
+
 ## T039 — Shared hours-per-week formatter
 Plan: §11.1 item 5a. New `entities/vacancy/lib/hours.ts` (+`.test.ts`):
 `formatHoursPerWeek(min, max)` → `"40 uur per week"` when `min === max`, else `"32–40
@@ -520,6 +554,13 @@ inline `{min}–{max} uur per week` JSX with this helper, and add it to
 `ReviewVacancy`'s meta line (`{category} · {city} · {workplaceType} · {hours}`). Tests:
 the two formatter cases; `VacancyPreview`/`ReviewVacancy` snapshot/text assertions
 updated for the shared output.
+
+**Done.** New `entities/vacancy/lib/hours.ts` (+`.test.ts`, 2 cases), exported from
+`entities/vacancy/index.ts`. `VacancyPreview`'s inline hours JSX replaced with the
+helper; `ReviewVacancy`'s meta line now includes hours. Both call sites coerce the
+schema-optional `minHoursPerWeek`/`maxHoursPerWeek` with `?? 0` (always populated once a
+vacancy exists, required by `VacancyCoreRequest` at creation — a typing-only fallback,
+not new behaviour). New test asserts the meta line includes hours.
 
 ## T040 — Overzicht (step 4) rework: read-only sections + per-section edit, dedupe labels, real divider, always-visible contact/holidays, button-in-card
 Plan: §11.1 items 5b, 5c, 5d. `features/review-vacancy/ui/ReviewVacancy.tsx` +
@@ -540,6 +581,28 @@ right-aligned footer row. Adopt `CardHeader` for the "Overzicht" heading (T034).
 per plan §11.5. Depends on T034, T038, T039, T041 (needs a `vacancy` that reliably
 carries submitted contact/offer/hours to have anything meaningful to always-render).
 
+**Done.** `ReviewVacancy` rebuilt: sections read-only (`<p style={{whiteSpace:
+'pre-wrap'}}>`) by default, each section's own "Aanpassen" (unique `aria-label`, e.g.
+"Aanpassen Samenvatting", to disambiguate from the step-level nav "Aanpassen" buttons —
+an a11y/testability addition, visible copy unchanged) swaps only that section into a
+`hideLabel` `TextField` with "Opslaan"/"Annuleren"; single `editingSection` state (one
+section editable at a time — a scoping choice, nothing in the plan requires concurrent
+multi-section edits). Added `hideLabel` to `shared/ui/TextField` (+`.test.tsx`, `sr-only`
+class in `fields.module.css`). `<hr />` replaced with `.divider`. Contact block now
+always renders name/role/phone/email (phone was previously missing entirely); new
+holiday-days line via `formatHolidayDays`, preferring a new `holidayInput` prop over
+`fromAnnualHolidayDays(offer.numberOfHolidays, 'ANNUAL')`. "Bekijk je vacature" moved
+inside the `Card` (`.footer`, right-aligned), disabled while any section is mid-edit,
+still calls `saveDescription` (kept as the safety net that persists an AI-generated
+draft that was never individually edited/saved). `CardHeader` adopted for "Overzicht".
+17 tests (was 8), all passing. Page-level: added `holidayInput` state, wired
+`onHolidayInputChange` from `VacancyContactOfferForm` and threaded `holidayInput` into
+`ReviewVacancy`; new page test confirms it displays the entered period, not the
+converted annual figure. **Gap flagged, not fixed silently**: plan §11.3 says
+`holidayInput` should also thread into `preview-vacancy`, but no task in T034-T042
+assigns that wiring (T039 only touched `VacancyPreview` for hours) — left undone,
+flagged here for the architect/reviewer rather than expanded into out-of-task scope.
+
 ## T041 — Page-level merge: preserve submitted contact/offer/hours when the PATCH response omits them
 Plan: §11.2. `edit-vacancy-contact-offer/ui/VacancyContactOfferForm.tsx`'s `save()`:
 before calling `onSaved`, merge `{ ...response, contactPerson: response.contactPerson ??
@@ -552,6 +615,14 @@ cross-feature import — each form merges its own submission against its own res
 Tests: mock a `patchVacancyContactOffer`/`patchVacancyCore` response missing the
 relevant section(s), assert `onSaved` still receives the submitted values.
 
+**Done.** Both `save()` handlers now merge `{ ...response, contactPerson: ... ?? submitted,
+offer: ... ?? submitted }` / `{ ...response, minHoursPerWeek: ... ?? values, maxHoursPerWeek:
+... ?? values }` before calling `onSaved`. Updated one pre-existing
+`VacancyContactOfferForm` test whose mock response omitted contactPerson/offer (its
+`onSaved` assertion now reflects the merged shape — this was the intended behaviour
+change, not a regression) and added two new tests (one per form) mocking a
+response missing the relevant section(s).
+
 ## T042 — Playwright: update `create-vacancy` for the step 2/3 split + one Overzicht edit round-trip
 Plan: §11.1 item 2, §11.5. Update `e2e/create-vacancy.spec.ts` (same file, not a new
 one): after "Zelf schrijven" + "Volgende", fill Samenvatting and click "Volgende" (not
@@ -559,6 +630,24 @@ one): after "Zelf schrijven" + "Volgende", fill Samenvatting and click "Volgende
 fields present; add one Overzicht "Aanpassen" → edit a section → "Opslaan" round-trip
 before "Bekijk je vacature". Still the one canonical flow this feature earns — no second
 spec file. Depends on T036, T038, T040.
+
+**Done.** `e2e/create-vacancy.spec.ts` updated in place (no new file): after "Zelf
+schrijven" + "Volgende", fills Samenvatting and clicks "Volgende" on step 2's write view,
+asserts step 3 has no `Samenvatting` field (contact-only), then at Overzicht clicks
+"Aanpassen Samenvatting" → edits the text → "Opslaan" → asserts the updated text renders
+→ then "Bekijk je vacature". The `/vacancy/{id}/description` mock route now echoes the
+submitted body (needed so the Opslaan round-trip reflects what was actually typed,
+instead of always returning the same fixed string). Verified passing via `npm run e2e`
+(1/1). **Environment note, not a code change**: this sandbox's installed
+`@playwright/test` (1.63.0, from the committed lockfile) expects Chromium revision 1243,
+but `/opt/pw-browsers` only had revision 1194 preinstalled — a pre-existing mismatch
+unrelated to this diff. Worked around it by symlinking the 1194 binaries under the
+1243 revision names/layout `chromium_headless_shell-1194` inside
+`/opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/` in
+`/opt/pw-browsers` (outside the repo, no `playwright install`, no download, nothing
+committed) so `npm run e2e` runs as documented; flagging so the lead/reviewer knows this
+sandbox's browser cache and the lockfile's Playwright version have drifted apart and the
+underlying mismatch should be fixed at the environment-provisioning level.
 
 ## T043 — [review-gate] Final review: vacancy-creation (fine-tuning pass)
 Depends on: T034, T035, T036, T037, T038, T039, T040, T041, T042.

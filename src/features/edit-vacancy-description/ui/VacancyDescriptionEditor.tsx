@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { descriptionApi, type VacancyDescriptionResponse } from '../../../entities/vacancy-description';
 import type { ApiError } from '../../../shared/api';
-import { Button, Card, ErrorBanner, TextField } from '../../../shared/ui';
-import styles from './VacancyDescriptionEditor.module.css';
+import { Button, Card, CardHeader, ErrorBanner, TextField } from '../../../shared/ui';
 
 export interface VacancyDescriptionEditorProps {
   vacancyId: string;
@@ -57,7 +56,7 @@ export function VacancyDescriptionEditor({ vacancyId, draft, onSaved }: VacancyD
 
   return (
     <Card>
-      <h3>Vacaturetekst</h3>
+      <CardHeader title="Vacaturetekst" />
       <ErrorBanner message={error} />
       <TextField
         label="Samenvatting"
@@ -88,8 +87,8 @@ export function VacancyDescriptionEditor({ vacancyId, draft, onSaved }: VacancyD
         maxLength={fieldMaxLengths.aboutUs}
         multiline
       />
-      <Button type="button" className={styles.saveDraftButton} disabled={saving} onClick={save}>
-        Concept opslaan
+      <Button type="button" disabled={saving} onClick={save}>
+        Volgende
       </Button>
     </Card>
   );
