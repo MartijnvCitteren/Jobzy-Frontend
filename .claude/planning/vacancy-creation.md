@@ -659,3 +659,69 @@ depending on all of T034-T042. T001-T033 already carry T033's own sign-off and a
 re-reviewed here — the reviewer should still sanity-check that nothing in T034-T042
 regresses what T033 already approved (FSD boundaries, API-boundary discipline, PII
 handling, the shared-generation-hook single-instance discipline).
+
+---
+
+## 12. PO follow-up pass (2026-09-25, second round)
+
+Trigger: PO re-tested after §11 and asked for four more changes. All four are small,
+local fixes with no architectural trade-off, so the lead wrote this addendum directly
+(no new slices, no new endpoints, no ADR). Tasks T044-T047, review gate T048.
+
+1. **Steps are only reachable after "Volgende"** (T044). Today
+   `VacancyCreatePage`'s `isReachable={(index) => index <= 1 || mode !== null}` lets the
+   user click straight to step 2 (Vacaturetekst) without any Basisgegevens — the page then
+   renders a blank step, because step 2 needs `vacancy`. New page-local state
+   `maxReachedStep: 1 | 2 | 3 | 4` (starts at `1`); every forward transition that happens
+   through a "Volgende"-style action (step 1 Volgende, step 2 write-view Volgende, the
+   3-questions modal submit, step 3 Volgende) goes through one `advanceTo(step)` helper
+   that sets `currentStep` and raises `maxReachedStep`. The Stepper's `isReachable` becomes
+   `index + 1 <= maxReachedStep`. Backward navigation (Stepper clicks on reached steps,
+   Overzicht "Aanpassen" links, "Terug naar tekstkeuze") never lowers it. "Bewaren als
+   concept" on step 1 saves the draft but does **not** unlock step 2. Picking a mode on the
+   step-2 choice view alone does not unlock step 3. Unreachable steps must look inert
+   (no hover affordance), not just have `cursor: not-allowed`.
+
+2. **Land dropdown order** (T045). `entities/location` gets a fixed preferred list
+   `['NL', 'BE', 'FR', 'DE']` (Nederland, België, Frankrijk, Duitsland — in that order,
+   not alphabetical), then a visual separator, then the remaining 25 countries in Dutch
+   alphabetical order (`localeCompare(…, 'nl')`, as today). Keep `countries` (the full
+   list) exported for code-to-label lookup (`VacancyPreview` uses it). `shared/ui/Select`
+   gains separator support (e.g. an `options` entry `{ type: 'separator' }` or a
+   `dividerAfter` flag — developer's call, but keep it generic, not country-specific),
+   rendered as a disabled, non-selectable `<option>` containing a line of `─` characters
+   (a native `<hr>` inside `<select>` is not reliably supported across browsers/React
+   DOM nesting). The separator must never be selectable or become the value.
+
+3. **Salarisperiode unreadable** (T046). Root cause: `.holidaysRow` sits *inside*
+   `.salaryGrid` with `grid-column: 1 / -1`; a spanning item occupies every explicit
+   track, so `repeat(auto-fit, minmax(150px, 1fr))` no longer collapses the empty 4th
+   track and the three salary fields shrink to ~150px — too narrow for the Salarisperiode
+   select ("Kies een p…"). Also, native selects render shorter than the text inputs next
+   to them on macOS. Fix:
+   - Lay out "Salaris en voorwaarden" as three sibling rows using the same two-column grid
+     as the contact rows (`repeat(auto-fit, minmax(220px, 1fr))`): Salaris minimum |
+     Salaris maximum; Valuta | Salarisperiode; Aantal vakantiedagen | Periode vakantiedagen.
+     The first two rows hide with "Liever niet delen"; the vakantiedagen row never does
+     (§11 item 4b). This also puts Valuta next to the salary it belongs to instead of below
+     the holiday row.
+   - `shared/ui/Select`: `appearance: none` plus a Lucide `ChevronDown` positioned in the
+     existing `.controlWrapper` (pointer-events none), right padding reserved for it (and
+     for the Land ISO2 suffix, which sits left of the chevron), so every select has the
+     same height, padding and font as the text inputs in every browser. Still a native
+     `<select>` — consistent with ADR-0004, no ADR change.
+
+4. **Remove "Tekst aanpassen" from the preview** (T047). `VacancyPreview` renders an
+   unstyled `<button>Tekst aanpassen</button>` under its H1; remove it. The footer's
+   "Terug" (same `onBack`) stays as the way back to the Overzicht.
+
+Testing: Vitest+RTL test-first for T044 (page-level: step 2 not clickable before step 1
+Volgende, not after "Bewaren als concept" either; step 3 not reachable from the choice
+view alone; reached steps stay clickable when going back), T045 (country order +
+separator position in `entities/location`; Select renders the separator disabled and it
+can't be selected), T047 (button gone). T046 is CSS/markup: one RTL assertion for the
+row grouping (Valuta and Salarisperiode in the same row, vakantiedagen row visible with
+"Liever niet delen"), plus a real-browser screenshot at ~800px and ~1280px proving the
+Salarisperiode select shows its full placeholder and matches the inputs' height (per the
+team-learnings rule: JSDOM can't verify layout). Update the Playwright flow only if it
+breaks.

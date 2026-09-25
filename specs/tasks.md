@@ -697,3 +697,46 @@ Re-verified: `tsc -b` clean, `eslint . && steiger ./src` clean, `vitest run` 179
 "Over de rol"/"Taken" placeholder and the grouped contact block.
 
 Reviewed-by: jobzy-frontend-reviewer — round-1 findings (holiday wording, empty-section placeholder, h3 section headings, grouped contact block, same-session holiday redisplay) verified fixed in 61ee419; tsc/eslint/steiger/vitest (179/179)/build/e2e re-run independently and clean. APPROVE.
+
+---
+
+# PO follow-up pass (2026-09-25, second round) — T044-T048
+
+Source: `specs/plan.md` §12. Written by the lead (small local fixes, no architectural
+trade-off). T048 is this round's single trailing `[review-gate]`.
+
+## T044 — Steps only reachable after "Volgende" (page-level `maxReachedStep`)
+Plan: §12 item 1. `pages/vacancy-create`: add `maxReachedStep`, route every forward
+transition (step 1 Volgende, step 2 write-view Volgende, 3-questions modal submit, step 3
+Volgende) through one `advanceTo(step)` helper, and set the Stepper's `isReachable` to
+`index + 1 <= maxReachedStep`. "Bewaren als concept" and choosing a mode alone must not
+unlock the next step; going back never re-locks reached steps. Make unreachable Stepper
+items visually inert (`shared/ui/Stepper.module.css`). Tests first in
+`VacancyCreatePage.test.tsx`.
+
+## T045 — Land dropdown: NL, BE, FR, DE first, separator, then the rest alphabetically
+Plan: §12 item 2. `entities/location`: preferred order `['NL', 'BE', 'FR', 'DE']`, then
+the remaining countries Dutch-sorted; keep the full `countries` export for lookups.
+`shared/ui/Select`: generic separator support rendered as a disabled `<option>` of `─`
+characters, never selectable. Wire into `VacancyCoreForm`'s Land select. Tests first in
+`countries.test.ts` and `Select.test.tsx`.
+
+## T046 — Salarisperiode readable: two-column salary rows + consistent select sizing
+Plan: §12 item 3. `edit-vacancy-contact-offer`: replace the single `.salaryGrid` (with the
+spanning `.holidaysRow` that blocks auto-fit collapsing) with three sibling rows on the
+contact grid (`minmax(220px, 1fr)`): min | max, Valuta | Salarisperiode, vakantiedagen |
+periode; first two hidden by "Liever niet delen", the third never. `shared/ui/Select`:
+`appearance: none` + Lucide `ChevronDown` in `.controlWrapper`, padding reserved for the
+chevron and the Land ISO2 suffix, same height as text inputs. One RTL assertion for the
+row grouping; real-browser screenshots at ~800px and ~1280px as proof. Depends on T045
+(both touch `Select`).
+
+## T047 — Preview: remove the "Tekst aanpassen" button
+Plan: §12 item 4. `features/preview-vacancy/ui/VacancyPreview.tsx`: delete the unstyled
+button under the H1; the footer "Terug" stays. Update `VacancyPreview.test.tsx` (and the
+Playwright flow if it clicks it).
+
+## T048 — [review-gate] Final review: vacancy-creation (PO follow-up pass)
+Depends on T044, T045, T046, T047. Reviewer checks the full diff of this round against
+§12, including a Dutch-copy read of any new user-visible strings (team-learnings), and
+that nothing regresses T043.
