@@ -25,3 +25,21 @@ Findings from retros after each epic/task wraps up. Read before starting work �
 - **Merge PATCH responses defensively as a pattern.** This pass's §11.2 solution (feature-local merge in each form's `save()`) worked well and didn't require a new store. If a third form develops the same "response may omit what I just submitted" shape, replicate this pattern — don't escalate to page-level state machinery unless the pattern repeats 3+ times across different pages/features.
 - **Environment: lock Playwright version to the sandbox's preinstalled browser revision.** The mismatch was pre-existing (lockfile expected 1243, `/opt/pw-browsers` had 1194), but nobody caught it until an agent needed to run e2e tests. A quick smoke check at session start (compare the Chromium revision `npx playwright --version`'s release expects against what's in `/opt/pw-browsers`) would surface this immediately.
 
+---
+
+## 2026-09-25 — Vacancy-creation PO follow-up pass (T044–T048)
+
+**What worked**
+- Developer applied the previous retro's rule: real-browser screenshots at 800/1280px plus measured heights proved the Salarisperiode fix (the unreadable select itself was reported by the PO), and the lead spotted the flush preview H1 in the round's screenshots before review.
+- Four small, scoped local fixes (step gating, dropdown order, grid/select sizing, button removal) kept the pass efficient and reduced scope-creep risk.
+- One-round review (REQUEST_CHANGES on spacing/styling → APPROVE) — both findings were CSS-only, no logic rework needed.
+
+**What wasted tokens or time**
+- **Previous round's own grid fix introduced a new bug.** T037 moved `numberOfHolidays` into `.holidaysRow` with `grid-column: 1 / -1`, which occupies every explicit track of the `repeat(auto-fit, minmax(...))` grid, blocking empty-track collapse and forcing all tracks narrower (~150px per track) — exactly the condition that made `Salarisperiode` unreadable. Root cause: a spanning item inside an `auto-fit` grid defeats the auto-fit's width-negotiation logic.
+- **Default state not screenshotted, only toggled state.** The previous round's single 800px screenshot had "Liever niet delen" checked, visually hiding the salary/select fields — so the overflow on those fields never appeared in the screenshot, even though the code was already broken.
+
+**What to change**
+- **Screenshot the default (unchecked/unmuted) state of a form when changing its layout**, not only a toggled state. "Liever niet delen" being checked hid critical fields in the viewport, masking a layout bug that would become obvious once that checkbox was unchecked. Toggled states should also be screenshotted for completeness, but document which state you're showing and why.
+- **Check spacing when removing a visual element.** T047's removed button was the only CSS-level gap between the breadcrumb and the card below it (no explicit `gap` or `margin-bottom` on the breadcrumb itself) — removing it left them flush. Catch this with: "If an element is being removed, verify that gap/spacing between its siblings is either (a) provided by a sibling's margin, or (b) by an explicit CSS gap on the parent — not just luck that an element existed." This would have surfaced in code review before the screenshot.
+- Chromium version mismatch (environment-level issue, not code): the pre-existing symlink workaround in `/opt/pw-browsers` signals the sandbox and lockfile drifted. At the start of future heavy-e2e sessions, a quick `npx playwright --version` check against `/opt/pw-browsers`'s actual content would catch this without stalling the work.
+
