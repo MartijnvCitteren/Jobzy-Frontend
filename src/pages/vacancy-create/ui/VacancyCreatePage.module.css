@@ -10,7 +10,7 @@
 .savedIndicator {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1);
   color: var(--text-secondary);
   font-size: var(--text-caption-size);
 }

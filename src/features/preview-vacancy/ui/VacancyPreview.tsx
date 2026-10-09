@@ -1,7 +1,7 @@
 import { workplaceTypeLabels, formatSalary, formatHoursPerWeek, type VacancyResponse } from '../../../entities/vacancy';
 import { countries } from '../../../entities/location';
 import type { VacancyDescriptionResponse } from '../../../entities/vacancy-description';
-import { Button, Card } from '../../../shared/ui';
+import { Button, Card, Logo } from '../../../shared/ui';
 import styles from './VacancyPreview.module.css';
 
 export interface VacancyPreviewProps {
@@ -27,7 +27,7 @@ export function VacancyPreview({ vacancy, description, onBack, onSaveDraft, onRe
       <Card className={styles.card}>
         <div className={styles.header}>
           <div className={styles.eyebrow}>
-            <img src="/branding/talmar-symbol.svg" alt="" aria-hidden="true" height={34} width={34} />
+            <Logo />
             Geplaatst via Talmar
           </div>
           <div className={styles.jobTitle}>{vacancy.jobTitle}</div>

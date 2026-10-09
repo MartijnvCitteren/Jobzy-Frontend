@@ -10,7 +10,7 @@
 
 .adviceTitle {
   font-size: var(--text-control-size);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   color: var(--text-primary);
 }
 

@@ -2,35 +2,51 @@
   padding: var(--space-2) var(--space-5);
   border-radius: var(--radius-control);
   font: inherit;
+  font-size: var(--text-control-size);
+  font-weight: var(--text-control-weight);
   cursor: pointer;
   border: 1px solid transparent;
   transition: var(--transition-hover);
 }
 
+/* Disabled looks the same for every variant: border-tinted fill, secondary ink. */
 .button:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  background: var(--action-disabled-bg);
+  border-color: var(--action-disabled-bg);
+  color: var(--action-disabled-text);
 }
 
 .primary {
   background: var(--action-primary);
+  border-color: var(--action-primary);
   color: var(--action-primary-text);
 }
 
 .primary:not(:disabled):hover {
   background: var(--action-primary-hover);
+  border-color: var(--action-primary-hover);
 }
 
 .secondary {
   background: var(--surface-card);
-  border-color: var(--border-hairline);
-  color: var(--text-primary);
+  border-color: var(--action-primary);
+  color: var(--action-primary);
 }
 
+.secondary:not(:disabled):hover {
+  background: var(--nav-active-bg);
+}
+
+/* Design system "ghost": teal text, no border or fill. */
 .text {
   background: transparent;
+  color: var(--action-primary);
+  padding-left: var(--space-1);
+  padding-right: var(--space-1);
+}
+
+.text:disabled {
+  background: transparent;
   border-color: transparent;
-  color: var(--text-secondary);
-  padding-left: 0;
-  padding-right: 0;
 }

@@ -10,7 +10,7 @@
 .box {
   width: 18px;
   height: 18px;
-  border-radius: 5px;
+  border-radius: var(--radius-checkbox);
   border: 1.5px solid var(--border-hairline);
   background: var(--surface-card);
   display: inline-flex;
@@ -18,6 +18,11 @@
   justify-content: center;
   transition: var(--transition-hover);
   flex-shrink: 0;
+}
+
+.input:focus-visible + .box {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
 }
 
 .input:checked + .box {

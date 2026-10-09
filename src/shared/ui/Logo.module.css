@@ -1,0 +1,33 @@
+/* Proportions follow the design system's Logo card: wordmark ≈ 0.57 × symbol, gap ≈ ¼. */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--logo-size) / 4);
+  flex-shrink: 0;
+}
+
+.symbol {
+  display: block;
+  width: var(--logo-size);
+  height: var(--logo-size);
+}
+
+.hub {
+  fill: var(--logo-hub);
+}
+
+.signal {
+  fill: var(--logo-signal);
+}
+
+.arrow {
+  fill: var(--logo-signal-arrow);
+}
+
+.wordmark {
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-extrabold);
+  font-size: calc(var(--logo-size) * 0.57);
+  line-height: var(--line-snug);
+  color: var(--text-primary);
+}
