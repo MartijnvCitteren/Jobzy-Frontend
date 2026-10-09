@@ -16,8 +16,17 @@ snapshot of it (synced 2026-10-09). If the artifact changes, re-sync `reference/
   semantic aliases (`--text-primary`, `--surface-card`, `--action-primary`, …). Loaded once
   in `src/app/boot.tsx`. Matches `reference/tokens.json` 1:1.
 - **Components:** `src/shared/ui` (exported via `src/shared/ui/index.ts`).
-- **Logo:** `public/branding/jobzy-symbol.svg`, `public/branding/jobzy-lockup.svg`.
+- **Logo:** in the UI always `<Logo />` / `<Logo variant="lockup" />` from `shared/ui` — never
+  an `<img>` of the SVGs (an SVG loaded as an image can't use Inter, and its badge ring isn't
+  a knockout). `public/branding/*.svg` are the DS asset files, used for the favicon only.
 - **Icons:** `lucide-react`.
+- **Enforcement:** `npm run lint:css` (Stylelint, `stylelint.config.js`, part of `npm run lint`)
+  rejects color literals, unit literals for spacing/radius/type/motion, literal font weights,
+  families and line-heights, and breakpoints other than 639/640 and 1023/1024px in CSS modules.
+- **Repo extensions** (in `tokens.css`, not yet in the DS artifact): `--text-h2-*` (19px),
+  `--text-h3-*` (15px), `--text-title-*` (22px), `--font-weight-*`, `--tracking-*`,
+  `--line-snug`, `--radius-checkbox`, `--scrim`, `--duration-loading`, `--logo-*`. Propose
+  them to the DS before relying on them more widely.
 
 ## Hard rules
 
@@ -33,7 +42,7 @@ snapshot of it (synced 2026-10-09). If the artifact changes, re-sync `reference/
 5. `--font-mono` / `figure` style only for dashboard numbers (cost, %, days).
 6. Spacing: `--space-1/2` inside controls, `--space-3/4` between fields and inside cards,
    `--space-5/6` between page sections. Controls use `--radius-control`, cards
-   `--radius-card`.
+   `--radius-card`. Circles use `--radius-pill`.
 7. Motion: one easing (`--duration` 280ms ease-out); hover is a background/border tint
    only (`--transition-hover`, 200ms), never shadow or lift. Loading = `Skeleton` bars,
    never a spinner. At most one motion moment per screen.
@@ -46,12 +55,12 @@ snapshot of it (synced 2026-10-09). If the artifact changes, re-sync `reference/
 
 | DS component | In code | Notes |
 | --- | --- | --- |
-| Buttons — primary / secondary / ghost | `Button` `variant="primary" \| "secondary" \| "text"` | DS "ghost" = `text` |
+| Buttons — primary / secondary / ghost | `Button` `variant="primary" \| "secondary" \| "text"` | DS "ghost" = `text`; 15px/600, teal secondary outline, shared disabled style |
 | Buttons — reject candidate | not yet | Add as a `Button` variant using `--action-destructive` when first needed |
-| Inputs (default / focus / error / disabled) | `TextField`, `NumberField`, `Select` (`fields.module.css`), `Checkbox` | Error helper text follows voice & tone |
+| Inputs (default / focus / error / disabled) | `TextField`, `NumberField`, `Select` (`fields.module.css`), `Checkbox` | Focus = teal border; error helper text follows voice & tone |
 | Status badges | not yet | Build per `reference/components/StatusBadges.md` (shape + color + label) |
 | Motion — loading | `Skeleton` | |
-| Logo | `public/branding/*.svg` | Never recolor the violet badge; clearspace = height ÷ 2 |
+| Logo | `Logo` `variant="symbol" \| "lockup"`, `size` 28/48/72/112/168 | Never recolor the violet badge; clearspace = height ÷ 2 |
 
 ## Reference files — read the one you need
 

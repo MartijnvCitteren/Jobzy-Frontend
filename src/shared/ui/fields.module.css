@@ -10,7 +10,7 @@
 }
 
 .labelBold {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .srOnly {
@@ -18,6 +18,7 @@
   width: 1px;
   height: 1px;
   padding: 0;
+  /* stylelint-disable-next-line declaration-property-unit-allowed-list -- standard visually-hidden pattern */
   margin: -1px;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
@@ -37,6 +38,24 @@
   transition: var(--transition-hover);
 }
 
+/* Focus: the hairline turns teal and thickens to 2px — no browser-blue ring. */
+.control:focus-visible {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: inset 0 0 0 1px var(--border-focus);
+}
+
+.control[aria-invalid='true']:focus-visible {
+  border-color: var(--border-error);
+  box-shadow: inset 0 0 0 1px var(--border-error);
+}
+
+.control:disabled {
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+}
+
 textarea.control {
   resize: vertical;
 }
@@ -45,7 +64,7 @@ select.control {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  padding-right: 44px;
+  padding-right: var(--chevron-space);
 }
 
 .control[aria-invalid='true'] {
@@ -53,6 +72,8 @@ select.control {
 }
 
 .controlWrapper {
+  /* Room on the right of a select for the chevron (and the suffix next to it). */
+  --chevron-space: 44px;
   position: relative;
 }
 
@@ -61,13 +82,14 @@ select.control {
 }
 
 select.controlWithSuffix {
-  padding-right: calc(44px + 2ch + var(--space-2));
+  /* stylelint-disable-next-line declaration-property-unit-allowed-list -- 2ch = the two-letter ISO2 suffix */
+  padding-right: calc(var(--chevron-space) + 2ch + var(--space-2));
 }
 
 .suffix {
   position: absolute;
   top: 50%;
-  right: 44px;
+  right: var(--chevron-space);
   transform: translateY(-50%);
   font-family: var(--font-mono);
   font-size: var(--text-label-size);

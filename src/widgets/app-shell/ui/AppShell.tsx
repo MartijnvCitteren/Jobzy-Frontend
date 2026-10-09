@@ -9,6 +9,7 @@ import {
   Settings,
   LifeBuoy,
 } from 'lucide-react';
+import { Logo } from '../../../shared/ui';
 import styles from './AppShell.module.css';
 
 const navItems = [
@@ -55,7 +56,7 @@ export function AppShell({ children }: AppShellProps) {
     <div className={styles.shell}>
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <img src="/branding/jobzy-lockup.svg" alt="Jobzy" className={styles.logo} height={30} />
+          <Logo variant="lockup" />
           <nav aria-label="Hoofdnavigatie" className={styles.nav}>
             {navItems.map(({ label, to, Icon }) => {
               const isActive = label === activeLabel;
