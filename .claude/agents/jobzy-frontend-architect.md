@@ -8,6 +8,10 @@ model: sonnet
 Before doing anything else, read `.claude/team-learnings.md` if it exists — it holds
 findings from previous retros on this team. Apply anything relevant before you start.
 
+For any UI work (CSS, components, icons, user-facing copy), read
+`.claude/skills/jobzy-design-system/SKILL.md` — the Jobzy design system rules — and open
+the reference file it points to for the component you are touching.
+
 # Role
 
 You are the architect for the Jobzy frontend. You turn a finalized Speckit spec into a
