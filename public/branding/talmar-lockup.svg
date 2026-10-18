@@ -5,5 +5,5 @@
     <circle cx="103.5" cy="30.5" r="21" fill="oklch(0.5 0.15 300)"></circle>
     <path d="M103.5 22.9 L109.8 33.5 L97.2 33.5 Z" fill="#ffffff"></path>
   </g>
-  <text x="118" y="72" font-family="Inter, sans-serif" font-weight="800" font-size="52" fill="oklch(0.22 0.01 90)">Jobzy</text>
+  <text x="118" y="72" font-family="Inter, sans-serif" font-weight="800" font-size="52" fill="oklch(0.22 0.01 90)">Talmar</text>
 </svg>

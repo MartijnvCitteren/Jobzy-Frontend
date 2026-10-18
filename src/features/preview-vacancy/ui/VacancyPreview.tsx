@@ -27,8 +27,8 @@ export function VacancyPreview({ vacancy, description, onBack, onSaveDraft, onRe
       <Card className={styles.card}>
         <div className={styles.header}>
           <div className={styles.eyebrow}>
-            <img src="/branding/jobzy-symbol.svg" alt="" aria-hidden="true" height={34} width={34} />
-            Geplaatst via Jobzy
+            <img src="/branding/talmar-symbol.svg" alt="" aria-hidden="true" height={34} width={34} />
+            Geplaatst via Talmar
           </div>
           <div className={styles.jobTitle}>{vacancy.jobTitle}</div>
           <div className={styles.chips}>

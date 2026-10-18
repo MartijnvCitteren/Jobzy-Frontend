@@ -1,4 +1,4 @@
-# Team Learnings — Jobzy Frontend
+# Team Learnings — Talmar Frontend
 
 Findings from retros after each epic/task wraps up. Read before starting work — patterns here compound over time.
 

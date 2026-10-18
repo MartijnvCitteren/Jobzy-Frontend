@@ -208,7 +208,7 @@ export interface components {
          */
         VacancyStatus: "DRAFT" | "PUBLISHED" | "FILLED" | "CLOSED" | "ARCHIVED";
         /**
-         * @description Internal Jobzy job-function taxonomy.
+         * @description Internal Talmar job-function taxonomy.
          * @enum {string}
          */
         VacancyCategory: "ADMINISTRATION" | "CONSTRUCTION" | "CUSTOMER_SUPPORT" | "DESIGN_CREATIVE" | "EDUCATION" | "ENGINEERING" | "FACILITY_SERVICES" | "FINANCE" | "HEALTHCARE" | "HOSPITALITY" | "HUMAN_RESOURCES" | "LEGAL" | "LOGISTICS_SUPPLY_CHAIN" | "MANAGEMENT" | "MARKETING" | "OPERATIONS" | "PRODUCTION_MANUFACTURING" | "RETAIL" | "SALES" | "SCIENCE_RESEARCH" | "OTHER";
