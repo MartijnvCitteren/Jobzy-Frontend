@@ -1,14 +1,18 @@
 ---
-name: jobzy-design-system
-description: Jobzy's design system (colors, type, spacing, radius, motion, components, iconography, voice & tone). Use for any UI work in this repo — writing or reviewing CSS modules, building or changing shared/ui components, choosing icons, or writing user-facing copy (labels, errors, empty states).
+name: talmar-design-system
+description: Talmar's design system (colors, type, spacing, radius, motion, components, iconography, voice & tone). Use for any UI work in this repo — writing or reviewing CSS modules, building or changing shared/ui components, choosing icons, or writing user-facing copy (labels, errors, empty states).
 ---
 
-# Jobzy Design System
+# Talmar Design System
 
-Source of truth: the "Jobzy - Design System" artifact on claude.ai —
+Source of truth: the design system artifact on claude.ai —
 https://claude.ai/artifact/S2ACsWNfY7U7Mg6WQuMeZW. The files under `reference/` are a
-snapshot of it (synced 2026-10-09). If the artifact changes, re-sync `reference/` and
-`src/app/styles/tokens.css` together.
+verbatim snapshot of it (last checked 2026-10-18). If the artifact changes, re-sync
+`reference/` and `src/app/styles/tokens.css` together.
+
+The artifact predates the rename and is still titled "Jobzy - Design System", so the
+snapshot says "Jobzy" and `jobzy-*.svg`. Read that as Talmar: the product name in UI copy
+is "Talmar" and the logo files are `talmar-*.svg`.
 
 ## Where the design system lives in code
 
@@ -16,7 +20,7 @@ snapshot of it (synced 2026-10-09). If the artifact changes, re-sync `reference/
   semantic aliases (`--text-primary`, `--surface-card`, `--action-primary`, …). Loaded once
   in `src/app/boot.tsx`. Matches `reference/tokens.json` 1:1.
 - **Components:** `src/shared/ui` (exported via `src/shared/ui/index.ts`).
-- **Logo:** `public/branding/jobzy-symbol.svg`, `public/branding/jobzy-lockup.svg`.
+- **Logo:** `public/branding/talmar-symbol.svg`, `public/branding/talmar-lockup.svg`.
 - **Icons:** `lucide-react`.
 
 ## Hard rules
