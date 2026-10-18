@@ -1,4 +1,6 @@
-# Jobzy Frontend
+# Talmar Web
+
+Frontend for Talmar ([talmar.eu](https://talmar.eu)).
 
 Vacancy-creation flow (GitHub issue #4) — Vite + React 19 + TypeScript, Feature-Sliced
 Design. Local-dev-only pass; see `specs/spec.md` for the full scope and

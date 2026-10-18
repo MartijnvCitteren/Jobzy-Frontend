@@ -55,7 +55,7 @@ export function AppShell({ children }: AppShellProps) {
     <div className={styles.shell}>
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <img src="/branding/jobzy-lockup.svg" alt="Jobzy" className={styles.logo} height={30} />
+          <img src="/branding/talmar-lockup.svg" alt="Talmar" className={styles.logo} height={30} />
           <nav aria-label="Hoofdnavigatie" className={styles.nav}>
             {navItems.map(({ label, to, Icon }) => {
               const isActive = label === activeLabel;
@@ -87,7 +87,7 @@ export function AppShell({ children }: AppShellProps) {
               <ul className={styles.accountMenu} role="menu" aria-label="Accountmenu">
                 <li className={styles.accountMenuHeader}>
                   <div className={styles.accountMenuName}>Merel Janssen</div>
-                  <div className={styles.accountMenuOrg}>Jobzy</div>
+                  <div className={styles.accountMenuOrg}>Talmar</div>
                 </li>
                 {accountMenuItems.map(({ label, Icon }) => (
                   <li key={label} role="none">

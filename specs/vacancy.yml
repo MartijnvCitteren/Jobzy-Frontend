@@ -1,8 +1,8 @@
 openapi: 3.1.1
 info:
-  title: Jobzy Vacancy API
+  title: Talmar Vacancy API
   description: >
-    API for managing vacancies in Jobzy. This endpoint covers creating (partially AI generated) vacancies, publishing, 
+    API for managing vacancies in Talmar. This endpoint covers creating (partially AI generated) vacancies, publishing, 
     updating and fetching vacancies.
   version: 1.0.0
 servers:
@@ -579,7 +579,7 @@ components:
     VacancyCategory:
       type: string
       description: >
-        Internal Jobzy job-function taxonomy.
+        Internal Talmar job-function taxonomy.
       enum:
         - ADMINISTRATION
         - CONSTRUCTION

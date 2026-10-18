@@ -44,7 +44,7 @@ describe('ChoiceCard', () => {
     render(
       <ChoiceCard
         icon={<Pencil size={22} aria-hidden="true" />}
-        title="Jobzy stelt een concept op"
+        title="Talmar stelt een concept op"
         body="Body"
         selected={false}
         onSelect={vi.fn()}
@@ -52,7 +52,7 @@ describe('ChoiceCard', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: /Jobzy stelt een concept op/ })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /Talmar stelt een concept op/ })).toHaveAttribute(
       'data-variant',
       'advice',
     );
