@@ -31,6 +31,8 @@
   --ink-panel: #12181a;
   --on-ink-panel: #ffffff;
   --on-ink-panel-secondary: #9aa3a1;
+  /* Modal scrim — the one alpha value in the system. */
+  --scrim: color-mix(in srgb, var(--ink-panel) 50%, transparent);
 
   /* Spacing */
   --space-1: 8px;
@@ -47,6 +49,8 @@
   --radius-control: 10px;
   --radius-card: 20px;
   --radius-pill: 999px;
+  /* Checkbox box only — --radius-control would round an 18px box into a radio circle. */
+  --radius-checkbox: 5px;
 
   /* Typography */
   --text-display-size: 60px;
@@ -61,6 +65,17 @@
   --text-figure-size: 28px;
   --text-figure-line: 34px;
   --text-figure-weight: 600;
+  /*
+   * Repo extensions below — not (yet) in the design system artifact, used by the
+   * vacancy-creation screens. Add a size here rather than a literal in a CSS module.
+   */
+  --text-h2-size: 19px;
+  --text-h2-line: 1.4;
+  --text-h3-size: 15px;
+  --text-h3-line: 1.4;
+  --text-title-size: 22px;
+  --text-title-line: 1.3;
+  --line-snug: 1.4;
   --text-control-size: 15px;
   --text-control-weight: 600;
   --text-label-size: 12px;
@@ -68,11 +83,19 @@
   --text-ui-size: 14px;
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --tracking-tight: -0.02em;
+  --tracking-snug: -0.01em;
 
   /* Motion */
   --ease: ease-out;
   --duration: 280ms;
   --duration-hover: 200ms;
+  /* One loop of the Skeleton loading bar; uses the shared --ease. */
+  --duration-loading: 1.4s;
   --transition: all var(--duration) var(--ease);
   --transition-hover: background var(--duration-hover) var(--ease),
     border-color var(--duration-hover) var(--ease), color var(--duration-hover) var(--ease);
@@ -105,6 +128,11 @@
 
   --nav-active-bg: var(--status-passed-bg);
   --nav-active-fg: var(--teal);
+
+  /* Logo — the signal arrow is white on the violet badge in every lockup. */
+  --logo-hub: var(--teal);
+  --logo-signal: var(--violet);
+  --logo-signal-arrow: #ffffff;
 }
 
 * {
@@ -130,26 +158,45 @@ h2,
 h3 {
   margin: 0;
   font-family: var(--font-sans);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 h1 {
   font-size: var(--text-h1-size);
   line-height: var(--text-h1-line);
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
 }
 
 h2 {
-  font-size: 19px;
-  line-height: 1.4;
+  font-size: var(--text-h2-size);
+  line-height: var(--text-h2-line);
 }
 
 h3 {
-  font-size: var(--text-control-size);
-  line-height: 1.4;
-  font-weight: 600;
+  font-size: var(--text-h3-size);
+  line-height: var(--text-h3-line);
+  font-weight: var(--font-weight-semibold);
 }
 
 p {
   margin: 0;
+}
+
+/*
+ * One focus ring for every interactive element: teal, never the browser's default blue.
+ * Form controls refine this in shared/ui/fields.module.css (border switches to teal).
+ */
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

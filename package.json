@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint . && steiger ./src",
+    "lint": "eslint . && steiger ./src && npm run lint:css",
+    "lint:css": "stylelint \"src/**/*.module.css\"",
     "steiger": "steiger ./src",
     "e2e": "playwright test",
     "generate:api": "openapi-typescript specs/vacancy.yml -o src/shared/api/generated/vacancy-api.ts"
@@ -40,6 +41,7 @@
     "openapi-typescript": "^7.5.2",
     "playwright": "^1.49.1",
     "steiger": "^0.5.7",
+    "stylelint": "^16.26.1",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.18.2",
     "vite": "^6.0.5",

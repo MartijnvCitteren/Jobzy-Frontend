@@ -24,3 +24,5 @@ export { Checkbox } from './Checkbox';
 export type { CheckboxProps } from './Checkbox';
 export { ChoiceCard } from './ChoiceCard';
 export type { ChoiceCardProps } from './ChoiceCard';
+export { Logo } from './Logo';
+export type { LogoProps, LogoSize } from './Logo';

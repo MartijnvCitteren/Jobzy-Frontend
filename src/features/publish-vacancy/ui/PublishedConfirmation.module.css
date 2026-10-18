@@ -4,14 +4,14 @@
   align-items: center;
   text-align: center;
   max-width: 520px;
-  margin: 64px auto 0;
-  gap: 18px;
+  margin: var(--space-6) auto 0;
+  gap: var(--space-2);
 }
 
 .circle {
   width: 56px;
   height: 56px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   background: var(--status-passed-bg);
   color: var(--teal);
   display: inline-flex;
