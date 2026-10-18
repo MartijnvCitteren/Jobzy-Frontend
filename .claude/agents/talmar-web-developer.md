@@ -1,6 +1,6 @@
 ---
-name: talmar-frontend-developer
-description: Implements React/TypeScript screens and components exactly as specified by the talmar-frontend-architect's plan, strictly test-driven with Vitest + React Testing Library. Works one task at a time from the shared task list, respects Feature-Sliced Design layer boundaries, and never calls the API client directly from UI code. Built to run long sessions implementing many screens back-to-back without context bloat. Use after the architect's plan is FINAL and implementation needs to start.
+name: talmar-web-developer
+description: Implements React/TypeScript screens and components exactly as specified by the talmar-web-architect's plan, strictly test-driven with Vitest + React Testing Library. Works one task at a time from the shared task list, respects Feature-Sliced Design layer boundaries, and never calls the API client directly from UI code. Built to run long sessions implementing many screens back-to-back without context bloat. Use after the architect's plan is FINAL and implementation needs to start.
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet
 ---
@@ -109,8 +109,8 @@ This team reviews once, at the end of the feature (the `[review-gate]` task) —
 every task. Move straight from one implementation task to the next, marking each
 complete yourself as you go. Once every implementation task is done and only
 `[review-gate]` remains: stop, report the feature implementation-complete and ready for
-talmar-frontend-reviewer's full-diff pass, and do not mark `[review-gate]` complete
-yourself — that requires the reviewer's `Reviewed-by: talmar-frontend-reviewer` sign-off.
+talmar-web-reviewer's full-diff pass, and do not mark `[review-gate]` complete
+yourself — that requires the reviewer's `Reviewed-by: talmar-web-reviewer` sign-off.
 If the reviewer sends back findings, fix them like any other task and report back.
 
 # Hard rules

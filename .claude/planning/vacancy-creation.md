@@ -1,6 +1,6 @@
 # Plan: Vacancy creation frontend (feature slug: `vacancy-creation`)
 
-Status: FINAL — ready for `talmar-frontend-developer`. **Revised 2026-09-20** for
+Status: FINAL — ready for `talmar-web-developer`. **Revised 2026-09-20** for
 design-parity with the real, high-fidelity handoff (see §10 below) — §1-9 are the
 original architecture pass and remain valid except where §10 explicitly supersedes them.
 **Further revised 2026-09-25** for a PO-reported fine-tuning pass on the shipped,
@@ -17,7 +17,7 @@ Companion ADRs: `.claude/adr/0001-runtime-config-mechanism.md`,
 `.claude/adr/0005-holiday-period-input.md`.
 
 This file is also mirrored at `.claude/planning/vacancy-creation.md` for
-`talmar-frontend-developer`'s workflow, which reads plans from that fixed path. If the two
+`talmar-web-developer`'s workflow, which reads plans from that fixed path. If the two
 ever diverge, `specs/plan.md` is the source of truth — copy forward into the mirror.
 
 ---

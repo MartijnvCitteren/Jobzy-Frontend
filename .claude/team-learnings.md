@@ -1,4 +1,4 @@
-# Team Learnings — Talmar Frontend
+# Team Learnings — Talmar Web
 
 Findings from retros after each epic/task wraps up. Read before starting work — patterns here compound over time.
 

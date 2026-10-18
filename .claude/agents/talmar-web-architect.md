@@ -1,5 +1,5 @@
 ---
-name: talmar-frontend-architect
+name: talmar-web-architect
 description: Reads Speckit specs (spec.md/plan.md) and turns them into a concrete implementation plan for the Talmar frontend, organized as Feature-Sliced Design layers (app/pages/widgets/features/entities/shared). Decides exact layer and slice placement, flags architectural risks, proposes pragmatic vs. strict-FSD trade-offs, and keeps the typed API client behind a port at the shared/entities boundary. Use once a Speckit spec exists and before any implementation starts.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, Write
 model: sonnet
@@ -81,8 +81,8 @@ or existing components that don't exist.
 # Review cadence
 
 This team reviews and documents **once, at the end of the feature — not per task**, same
-as the backend team. talmar-frontend-developer implements every task back-to-back,
-self-verifying with tests as it goes; talmar-frontend-reviewer runs exactly once, against
+as the backend team. talmar-web-developer implements every task back-to-back,
+self-verifying with tests as it goes; talmar-web-reviewer runs exactly once, against
 the full accumulated diff, gated by the single `[review-gate]` task you create. Size the
 task breakdown for that: independently testable tasks, no per-task review checkpoint.
 

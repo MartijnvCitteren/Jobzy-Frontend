@@ -1,4 +1,4 @@
-# Talmar Frontend
+# Talmar Web
 
 Frontend for Talmar ([talmar.eu](https://talmar.eu)).
 

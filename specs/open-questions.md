@@ -3,7 +3,7 @@
 Running list of things a human should confirm later. Append new entries under a dated
 heading rather than editing history away.
 
-## 2026-09-19 — architect pass (talmar-frontend-architect)
+## 2026-09-19 — architect pass (talmar-web-architect)
 
 1. **Contract bug: `VacancyUpdateRequest` cannot carry hours-per-week.**
    `PATCH /vacancy/{id}` only has a `hoursPerWeek` field that doesn't exist as a real
@@ -63,7 +63,7 @@ heading rather than editing history away.
    will block real (non-mocked) local testing against an actual `talmar-api`
    instance, not just this UI's own logic.
 
-## 2026-09-19 — reviewer pass (talmar-frontend-reviewer)
+## 2026-09-19 — reviewer pass (talmar-web-reviewer)
 
 8. **Currency dropdown narrows the contract.** `Offer.currency` is a free-text
    ISO-4217-pattern field in `specs/vacancy.yml` (`pattern: '^[A-Z]{3}$'`), not an enum.
@@ -83,7 +83,7 @@ heading rather than editing history away.
    nog niet compleet — controleer hem even.") — **this nitpick now has a concrete,
    design-sourced fix**, folded into T026's rework rather than left as a follow-up.
 
-## 2026-09-20 — architect pass, design-parity revision (talmar-frontend-architect)
+## 2026-09-20 — architect pass, design-parity revision (talmar-web-architect)
 
 Full context: `specs/plan.md` §10, `specs/design-notes.md` (now the verified capture).
 New questions raised by reading the real, high-fidelity handoff in full:
@@ -135,7 +135,7 @@ New questions raised by reading the real, high-fidelity handoff in full:
     the swap as a pre-ship follow-up. **Needs a human with access to the real brand
     asset files** before this ships externally.
 
-## 2026-09-25 — architect pass, fine-tuning (talmar-frontend-architect)
+## 2026-09-25 — architect pass, fine-tuning (talmar-web-architect)
 
 Full context: `specs/plan.md` §11, PO browser-test feedback on PR #5.
 
