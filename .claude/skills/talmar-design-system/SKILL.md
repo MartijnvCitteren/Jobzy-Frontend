@@ -21,16 +21,21 @@ is "Talmar" and the logo files are `talmar-*.svg`.
   in `src/app/boot.tsx`. Matches `reference/tokens.json` 1:1.
 - **Components:** `src/shared/ui` (exported via `src/shared/ui/index.ts`).
 - **Logo:** in the UI always `<Logo />` / `<Logo variant="lockup" />` from `shared/ui` — never
-  an `<img>` of the SVGs (an SVG loaded as an image can't use Inter, and its badge ring isn't
-  a knockout). `public/branding/talmar-symbol.svg` and `talmar-lockup.svg` are the DS asset
-  files, used for the favicon only.
+  an `<img>` of the SVGs (the component colours the artwork from tokens). The official artwork
+  — a cream "t" and a violet dot on a teal rounded square — lives in `Talmar/design/talmar-logo`;
+  the DS artifact's older symbol (badge with an arrow) is the Jobzy logo, don't use it.
+  `public/branding/talmar-icon.svg` and `talmar-lockup.svg` are copies of the official files,
+  used for the favicon only.
 - **Icons:** `lucide-react`.
+- **Fonts:** Inter and JetBrains Mono are bundled from `@fontsource-variable/*` (imported at the
+  top of `tokens.css`), never loaded from a font CDN — the Keycloak theme ships them in its JAR.
 - **Enforcement:** `npm run lint:css` (Stylelint, `stylelint.config.js`, part of `npm run lint`)
   rejects color literals, unit literals for spacing/radius/type/motion, literal font weights,
   families and line-heights, and breakpoints other than 639/640 and 1023/1024px in CSS modules.
 - **Repo extensions** (in `tokens.css`, not yet in the DS artifact): `--text-h2-*` (19px),
   `--text-h3-*` (15px), `--text-title-*` (22px), `--font-weight-*`, `--tracking-*`,
-  `--line-snug`, `--radius-checkbox`, `--scrim`, `--duration-loading`, `--logo-*`. Propose
+  `--line-snug`, `--radius-checkbox`, `--scrim`, `--duration-loading`, `--logo-*`,
+  `--form-max` (440px single-column form width, used by the Keycloak theme). Propose
   them to the DS before relying on them more widely.
 
 ## Hard rules
@@ -65,7 +70,7 @@ is "Talmar" and the logo files are `talmar-*.svg`.
 | Inputs (default / focus / error / disabled) | `TextField`, `NumberField`, `Select` (`fields.module.css`), `Checkbox` | Focus = teal border; error helper text follows voice & tone |
 | Status badges | not yet | Build per `reference/components/StatusBadges.md` (shape + color + label) |
 | Motion — loading | `Skeleton` | |
-| Logo | `Logo` `variant="symbol" \| "lockup"`, `size` 28/48/72/112/168 | Never recolor the violet badge; clearspace = height ÷ 2 |
+| Logo | `Logo` `variant="symbol" \| "lockup"`, `size` 28/48/72/112/168 | Never recolor the violet dot; clearspace = height ÷ 2 |
 
 ## Reference files — read the one you need
 

@@ -14,30 +14,23 @@ describe('Logo', () => {
     expect(screen.getAllByRole('img', { name: 'Talmar' })).toHaveLength(2);
   });
 
-  it('renders the wordmark as text only in the lockup', () => {
+  it('draws the Talmar icon: the "t" glyph and the violet dot on the teal square', () => {
+    const { container } = render(<Logo />);
+
+    expect(container.querySelector('[data-part="square"]')).not.toBeNull();
+    expect(container.querySelectorAll('[data-part="glyph"]')).toHaveLength(2);
+    expect(container.querySelector('[data-part="dot"]')).not.toBeNull();
+  });
+
+  it('adds the wordmark only in the lockup', () => {
     const { container, rerender } = render(<Logo />);
-    expect(container).not.toHaveTextContent('Talmar');
+    expect(container.querySelector('[data-part="wordmark"]')).toBeNull();
 
     rerender(<Logo variant="lockup" />);
-    expect(container).toHaveTextContent('Talmar');
+    expect(container.querySelector('[data-part="wordmark"]')).not.toBeNull();
   });
 
-  it('gives each instance its own knockout mask', () => {
-    const { container } = render(
-      <>
-        <Logo />
-        <Logo />
-      </>,
-    );
-
-    const ids = Array.from(container.querySelectorAll('mask')).map((mask) => mask.id);
-    expect(new Set(ids).size).toBe(2);
-    ids.forEach((id) =>
-      expect(container.querySelector(`rect[mask="url(#${id})"]`)).not.toBeNull(),
-    );
-  });
-
-  it('sizes the symbol from the design-system size scale', () => {
+  it('sizes the logo from the design-system size scale', () => {
     render(<Logo size={48} />);
     expect(screen.getByRole('img', { name: 'Talmar' })).toHaveStyle({ '--logo-size': '48px' });
   });

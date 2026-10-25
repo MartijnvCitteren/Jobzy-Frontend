@@ -3,7 +3,12 @@
  * (its per-topic token files under tokens dot css) per ADR-0003. Names and values are
  * copied as-is; no remapping to the earlier placeholder token names.
  */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+/*
+ * Fonts are bundled from npm (OFL-licensed variable fonts) and served from our own origin —
+ * the app and the Keycloak theme JAR alike. No font CDN: nothing is sent to a third party.
+ */
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
 
 :root {
   /* Base palette */
@@ -42,6 +47,8 @@
   --space-5: 48px;
   --space-6: 64px;
   --content-max: 840px;
+  /* Repo extension: width of single-column forms such as the Keycloak sign-up card. */
+  --form-max: 440px;
   --bp-mobile: 640px;
   --bp-tablet: 1024px;
 
@@ -81,8 +88,8 @@
   --text-label-size: 12px;
   --text-caption-size: 13px;
   --text-ui-size: 14px;
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-sans: 'Inter Variable', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
   --font-weight-regular: 400;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
@@ -129,10 +136,11 @@
   --nav-active-bg: var(--status-passed-bg);
   --nav-active-fg: var(--teal);
 
-  /* Logo — the signal arrow is white on the violet badge in every lockup. */
-  --logo-hub: var(--teal);
-  --logo-signal: var(--violet);
-  --logo-signal-arrow: #ffffff;
+  /* Logo — official artwork (design/talmar-logo): cream "t" and violet dot on a teal square. */
+  --logo-square: var(--teal);
+  --logo-glyph: var(--surface-bg);
+  --logo-dot: var(--violet);
+  --logo-wordmark: var(--ink);
 }
 
 * {

@@ -6,7 +6,7 @@ import boundaries from 'eslint-plugin-boundaries';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'src/shared/api/generated'] },
+  { ignores: ['dist', 'dist_keycloak', 'storybook-static', 'public/keycloakify-dev-resources', 'src/shared/api/generated', 'src/keycloak-theme/kc.gen.tsx'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],
@@ -27,6 +27,8 @@ export default tseslint.config(
         { type: 'features', pattern: 'src/features/*' },
         { type: 'entities', pattern: 'src/entities/*' },
         { type: 'shared', pattern: 'src/shared/*' },
+        // Keycloak login theme (Keycloakify): not an FSD layer, sits beside the app and reuses shared.
+        { type: 'keycloak-theme', pattern: 'src/keycloak-theme' },
       ],
       'boundaries/ignore': ['**/*.test.{ts,tsx}'],
     },
@@ -44,6 +46,7 @@ export default tseslint.config(
             { from: 'features', allow: ['features', 'entities', 'shared'] },
             { from: 'entities', allow: ['entities', 'shared'] },
             { from: 'shared', allow: ['shared'] },
+            { from: 'keycloak-theme', allow: ['keycloak-theme', 'shared', 'app'] },
           ],
         },
       ],
@@ -54,6 +57,9 @@ export default tseslint.config(
           rules: [
             { target: ['shared'], allow: '**' },
             { target: ['entities', 'features', 'widgets', 'pages'], allow: 'index.ts' },
+            // The theme shares the app's design tokens, and nothing else from app.
+            { target: ['app'], allow: 'tokens.css' },
+            { target: ['keycloak-theme'], allow: '**' },
           ],
         },
       ],

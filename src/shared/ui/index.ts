@@ -6,6 +6,8 @@ export { CardHeader } from './CardHeader';
 export type { CardHeaderProps } from './CardHeader';
 export { TextField } from './TextField';
 export type { TextFieldProps } from './TextField';
+export { PasswordField } from './PasswordField';
+export type { PasswordFieldProps } from './PasswordField';
 export { NumberField } from './NumberField';
 export type { NumberFieldProps } from './NumberField';
 export { Select } from './Select';
