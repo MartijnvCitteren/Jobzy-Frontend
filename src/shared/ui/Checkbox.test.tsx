@@ -25,4 +25,21 @@ describe('Checkbox', () => {
 
     expect(screen.getByRole('checkbox', { name: 'Liever niet delen' })).toBeChecked();
   });
+
+  it('posts under its name and links its error', () => {
+    render(
+      <Checkbox
+        label="Ik ga akkoord"
+        checked={false}
+        onChange={vi.fn()}
+        name="termsAccepted"
+        error="Ga nog even akkoord met de voorwaarden."
+      />,
+    );
+
+    const checkbox = screen.getByRole('checkbox', { name: 'Ik ga akkoord' });
+    expect(checkbox).toHaveAttribute('name', 'termsAccepted');
+    expect(checkbox).toHaveAttribute('aria-invalid', 'true');
+    expect(checkbox).toHaveAccessibleDescription('Ga nog even akkoord met de voorwaarden.');
+  });
 });

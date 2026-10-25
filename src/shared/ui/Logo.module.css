@@ -1,33 +1,41 @@
-/* Proportions follow the design system's Logo card: wordmark ≈ 0.57 × symbol, gap ≈ ¼. */
 .logo {
   display: inline-flex;
   align-items: center;
-  gap: calc(var(--logo-size) / 4);
   flex-shrink: 0;
 }
 
-.symbol {
+.symbol,
+.lockup {
   display: block;
-  width: var(--logo-size);
   height: var(--logo-size);
 }
 
-.hub {
-  fill: var(--logo-hub);
+.symbol {
+  width: var(--logo-size);
 }
 
-.signal {
-  fill: var(--logo-signal);
+/* The lockup artwork is 388 × 116: the wordmark sits to the right of the icon. */
+.lockup {
+  width: calc(var(--logo-size) * 388 / 116);
 }
 
-.arrow {
-  fill: var(--logo-signal-arrow);
+.square {
+  fill: var(--logo-square);
+}
+
+.glyph {
+  fill: none;
+  stroke: var(--logo-glyph);
+}
+
+.dotRing {
+  fill: var(--logo-glyph);
+}
+
+.dot {
+  fill: var(--logo-dot);
 }
 
 .wordmark {
-  font-family: var(--font-sans);
-  font-weight: var(--font-weight-extrabold);
-  font-size: calc(var(--logo-size) * 0.57);
-  line-height: var(--line-snug);
-  color: var(--text-primary);
+  fill: var(--logo-wordmark);
 }

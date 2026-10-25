@@ -9,3 +9,9 @@ coverage
 playwright-report
 test-results
 *.tsbuildinfo
+
+# Keycloakify
+dist_keycloak
+public/keycloakify-dev-resources
+.keycloakify
+storybook-static

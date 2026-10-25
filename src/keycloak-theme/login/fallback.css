@@ -1,0 +1,70 @@
+/*
+ * Brand override for Keycloak pages that are not ejected yet (login, reset password, …).
+ * Those render Keycloak's own PatternFly markup and CSS; this maps Talmar's tokens onto it so
+ * nothing looks off-brand until each page gets its own React version in the Talmar Template.
+ *
+ * Scoped to html.login-pf, the class Keycloakify's default Template sets — ejected pages
+ * (register) don't use that Template, so this never touches them.
+ */
+html.login-pf {
+  --pf-global--FontFamily--sans-serif: var(--font-sans);
+  --pf-global--FontFamily--heading--sans-serif: var(--font-sans);
+  --pf-global--FontFamily--redhat-updated--sans-serif: var(--font-sans);
+  --pf-global--FontFamily--redhat-updated--heading--sans-serif: var(--font-sans);
+  --pf-global--primary-color--100: var(--action-primary);
+  --pf-global--primary-color--200: var(--action-primary-hover);
+  --pf-global--link--Color: var(--text-link);
+  --pf-global--link--Color--hover: var(--action-primary-hover);
+  --pf-global--danger-color--100: var(--danger);
+  --pf-global--BorderRadius--sm: var(--radius-control);
+  --pf-global--Color--100: var(--text-primary);
+  --pf-global--Color--200: var(--text-secondary);
+  --pf-c-button--BorderRadius: var(--radius-control);
+  --pf-c-form-control--BorderRadius: var(--radius-control);
+}
+
+html.login-pf body {
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+/* The ejected KeycloakTemplate puts the Talmar logo here instead of the realm name. */
+html.login-pf #kc-header-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-5) 0 var(--space-3);
+}
+
+html.login-pf .card-pf {
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-card);
+  background: var(--surface-page);
+  box-shadow: none;
+}
+
+html.login-pf .pf-c-form-control {
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-control);
+  background: var(--surface-card);
+}
+
+html.login-pf .pf-c-form-control:focus {
+  border-color: var(--border-focus);
+  box-shadow: inset 0 0 0 1px var(--border-focus);
+}
+
+html.login-pf .pf-c-button.pf-m-primary {
+  background: var(--action-primary);
+  border-radius: var(--radius-control);
+  color: var(--action-primary-text);
+  font-weight: var(--text-control-weight);
+}
+
+html.login-pf .pf-c-button.pf-m-primary:hover {
+  background: var(--action-primary-hover);
+}
+
+html.login-pf a {
+  color: var(--text-link);
+}
